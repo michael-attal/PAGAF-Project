@@ -15,7 +15,8 @@ use app_config::{GameSettings, GameState};
 use game::GamePause;
 use ingame_ui::AvailableTiles;
 use tile_loader::load_tiles;
-use tilemap::{SelectedTile, TileType, place_tile, setup_grid};
+use tilemap::{SelectedTile, TileType, setup_grid};
+use wfc::WFCState;
 
 fn main() {
     App::new()
@@ -31,6 +32,7 @@ fn main() {
         .insert_resource(AvailableTiles::default())
         .insert_resource(SelectedTile(TileType::Empty))
         .insert_resource(UndoRedo::default())
+        .insert_resource(WFCState::default())
         .init_state::<GameState>()
         .add_systems(Startup, (load_tiles, setup_grid))
         .add_systems(
@@ -50,6 +52,9 @@ fn main() {
                 ingame_ui::game_menu.run_if(in_state(GameState::InGame)),
                 ingame_ui::tile_panel.run_if(in_state(GameState::InGame)),
                 tilemap::place_tile_preview.run_if(in_state(GameState::InGame)),
+                tilemap::update_placement_highlights
+                    .after(tilemap::place_tile_preview)
+                    .run_if(in_state(GameState::InGame)),
                 ui::update_volume,
             ),
         )

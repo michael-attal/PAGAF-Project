@@ -1,13 +1,12 @@
-use rand::prelude::*;
-use rand::distr::{self, weighted};
-use rand::thread_rng;
-
-use std::collections::VecDeque;
-use bevy::prelude::*;
-
 use crate::tile_loader::TileAssets;
 use crate::tilemap::{TileMap, TileType};
+use bevy::prelude::*;
+use rand::distr::weighted;
+use rand::prelude::*;
+use rand::thread_rng;
+use std::collections::VecDeque;
 
+/* ─────────────────────────────  Constants  ──────────────────────────────── */
 
 const TILE_COUNT: usize = TileType::Park as usize + 1;
 const WEIGHTS: [f32; TILE_COUNT] = [0.0, 3.0, 2.0, 1.0, 2.5, 1.5];
@@ -17,6 +16,7 @@ const SOUTH: usize = 1;
 const EAST: usize = 2;
 const WEST: usize = 3;
 
+// Règles de placement des tuiles
 const RULES: [[[bool; TILE_COUNT]; TILE_COUNT]; 4] = build_rules();
 
 const fn build_rules() -> [[[bool; TILE_COUNT]; TILE_COUNT]; 4] {
@@ -26,8 +26,10 @@ const fn build_rules() -> [[[bool; TILE_COUNT]; TILE_COUNT]; 4] {
     let park = TileType::Park as usize;
     let mut d = 0;
     while d < 4 {
+        // Residential and industrial cannot be adjacent
         m[d][res][ind] = false;
         m[d][ind][res] = false;
+        // Parks cannot be adjacent to each other
         m[d][park][park] = false;
         d += 1;
     }
@@ -49,7 +51,6 @@ pub struct WFCCell {
 }
 
 impl WFCCell {
-    /// Creates a new cell with all options enabled (except Empty)
     fn new_full() -> Self {
         let mut p = [false; TILE_COUNT];
         let mut c = 0;
@@ -64,7 +65,6 @@ impl WFCCell {
         }
     }
 
-    /// Sets the cell to a specific tile type
     fn set_to(&mut self, id: usize) {
         self.possible = [false; TILE_COUNT];
         self.possible[id] = true;
@@ -72,13 +72,24 @@ impl WFCCell {
         self.collapsed = true;
     }
 
-    /// Returns the entropy (number of possibilities) of the cell
     fn entropy(&self) -> usize {
         self.count
     }
 }
 
-/// Represents the complete grid for the WFC algorithm
+#[derive(Resource)]
+pub struct WFCState {
+    pub grid: WFCGrid,
+}
+
+impl Default for WFCState {
+    fn default() -> Self {
+        Self {
+            grid: WFCGrid::new(50, 50), // Same size as TileMap // TODO: refactor it
+        }
+    }
+}
+
 pub struct WFCGrid {
     pub width: usize,
     pub height: usize,
@@ -94,7 +105,7 @@ impl WFCGrid {
         }
     }
 
-    fn idx(&self, x: usize, y: usize) -> usize {
+    pub fn idx(&self, x: usize, y: usize) -> usize {
         y * self.width + x
     }
 
@@ -140,11 +151,11 @@ impl WFCGrid {
         self.cells[idx].set_to(pick);
     }
 
-    fn propagate(&mut self, sx: usize, sy: usize) -> bool {
-        let mut q = VecDeque::new();
-        q.push_back((sx, sy));
+    pub fn propagate(&mut self, sx: usize, sy: usize) -> bool {
+        let mut queue = VecDeque::new();
+        queue.push_back((sx, sy));
 
-        while let Some((x, y)) = q.pop_front() {
+        while let Some((x, y)) = queue.pop_front() {
             let idx = self.idx(x, y);
             for dir in 0..4 {
                 if let Some((nx, ny)) = neighbour(self.width, self.height, x, y, dir) {
@@ -173,7 +184,7 @@ impl WFCGrid {
                         return false;
                     }
                     if changed {
-                        q.push_back((nx, ny));
+                        queue.push_back((nx, ny));
                     }
                 }
             }
@@ -181,61 +192,58 @@ impl WFCGrid {
         true
     }
 
-    pub fn run(&mut self) -> Result<(), WFCError> {
-        while let Some((x, y)) = self.lowest_entropy() {
-            self.collapse(x, y);
-            if !self.propagate(x, y) {
-                return Err(WFCError::Contradiction);
-            }
+    pub fn place_tile(&mut self, x: usize, y: usize, tile_type: TileType) -> bool {
+        let idx = self.idx(x, y);
+        if self.cells[idx].collapsed {
+            return false;
         }
-        Ok(())
+
+        self.cells[idx].set_to(tile_type as usize);
+        self.propagate(x, y)
     }
 
-    pub fn to_tiles(&self) -> Vec<Vec<TileType>> {
-        let mut g = vec![vec![TileType::Empty; self.width]; self.height];
-        for y in 0..self.height {
-            for x in 0..self.width {
-                for i in 1..TILE_COUNT {
-                    if self.cells[self.idx(x, y)].possible[i] {
-                        g[y][x] = TileType::from_index(i).unwrap_or(TileType::Empty);
-                        break;
+    pub fn can_place_tile(&self, x: usize, y: usize, tile_type: TileType) -> bool {
+        let idx = self.idx(x, y);
+        if self.cells[idx].collapsed {
+            return false;
+        }
+
+        // Checks whether the tile respects the rules with its neighbors
+        for dir in 0..4 {
+            if let Some((nx, ny)) = neighbour(self.width, self.height, x, y, dir) {
+                let nidx = self.idx(nx, ny);
+                if self.cells[nidx].collapsed {
+                    let mut valid = false;
+                    for t in 1..TILE_COUNT {
+                        if self.cells[nidx].possible[t] && RULES[dir][tile_type as usize][t] {
+                            valid = true;
+                            break;
+                        }
+                    }
+                    if !valid {
+                        return false;
                     }
                 }
             }
         }
-        g
-    }
-}
-
-/// Bevy system for level generation
-pub fn generate_level(
-    mut commands: Commands,
-    tile_assets: Res<TileAssets>,
-    mut tile_map: ResMut<TileMap>,
-) {
-    let mut wfc = WFCGrid::new(tile_map.width, tile_map.height);
-
-    if wfc.run().is_err() {
-        error!("WFC contradiction – map left empty");
-        return;
+        true
     }
 
-    let grid = wfc.to_tiles();
-    for y in 0..tile_map.height {
-        for x in 0..tile_map.width {
-            let t = grid[y][x];
-            tile_map.tiles[y][x].tile_type = t;
-            if t != TileType::Empty {
-                let handle = tile_assets.tiles[t.index()].clone();
-                let entity = commands
-                    .spawn((
-                        SceneRoot(handle),
-                        Transform::from_xyz(x as f32, 0.0, y as f32),
-                    ))
-                    .id();
-                tile_map.entities[y][x] = Some(entity);
+    pub fn get_possible_tiles(&self, x: usize, y: usize) -> Vec<TileType> {
+        let idx = self.idx(x, y);
+        let mut possible = Vec::new();
+
+        if !self.cells[idx].collapsed {
+            for i in 1..TILE_COUNT {
+                if self.cells[idx].possible[i] {
+                    if let Some(tile_type) = TileType::from_index(i) {
+                        possible.push(tile_type);
+                    }
+                }
             }
         }
+
+        possible
     }
 }
 
@@ -266,5 +274,17 @@ mod tests {
         assert_eq!(neighbour(3, 3, 0, 0, NORTH), None);
         assert_eq!(neighbour(3, 3, 2, 2, SOUTH), None);
         assert!(neighbour(3, 3, 1, 1, EAST).is_some());
+    }
+
+    #[test]
+    fn test_can_place_tile() {
+        let mut grid = WFCGrid::new(3, 3);
+
+        // Initial placement test
+        assert!(grid.can_place_tile(1, 1, TileType::Residential));
+
+        // Place a tile and check constraints
+        grid.place_tile(1, 1, TileType::Residential);
+        assert!(!grid.can_place_tile(1, 1, TileType::Industrial));
     }
 }

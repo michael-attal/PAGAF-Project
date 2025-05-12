@@ -1,7 +1,16 @@
 use crate::tile_loader::TileAssets;
 use crate::undo_redo::{Action, UndoRedo};
+use crate::wfc::WFCState;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
+
+#[derive(Component)]
+pub struct PlacementHighlight;
+
+#[derive(Component)]
+pub struct ValidationIndicator {
+    pub valid: bool,
+}
 
 // Tile component storing type and position
 #[derive(Component)]
@@ -42,8 +51,7 @@ impl TileType {
             TileType::Empty => None,
             _ => Some(format!(
                 "models/tiles/tile_{}/tile.glb#Scene0",
-                //self.index()
-                1
+                self.index()
             )),
         }
     }
@@ -62,7 +70,6 @@ impl TileType {
 }
 
 // Resource to store the map data
-
 #[derive(Resource)]
 pub struct TileMap {
     pub tiles: Vec<Vec<Tile>>,
@@ -105,6 +112,14 @@ impl Default for TileMap {
 #[derive(Component)]
 struct GridTile;
 
+// Resource for highlighting materials
+#[derive(Resource)]
+pub struct HighlightMaterials {
+    valid: Handle<StandardMaterial>,
+    invalid: Handle<StandardMaterial>,
+    preview: Handle<StandardMaterial>,
+}
+
 // Setup function to create the grid mesh
 pub fn setup_grid(
     mut commands: Commands,
@@ -120,6 +135,26 @@ pub fn setup_grid(
         perceptual_roughness: 1.0,
         ..default()
     });
+
+    let highlight_materials = HighlightMaterials {
+        valid: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.0, 1.0, 0.0, 0.3),
+            alpha_mode: AlphaMode::Blend,
+            ..default()
+        }),
+        invalid: materials.add(StandardMaterial {
+            base_color: Color::srgba(1.0, 0.0, 0.0, 0.3),
+            alpha_mode: AlphaMode::Blend,
+            ..default()
+        }),
+        preview: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.0, 0.0, 1.0, 0.3),
+            alpha_mode: AlphaMode::Blend,
+            ..default()
+        }),
+    };
+
+    commands.insert_resource(highlight_materials);
 
     for x in 0..grid_size {
         for z in 0..grid_size {
@@ -143,16 +178,15 @@ pub fn place_tile_preview(
     camera: Query<(&Camera, &GlobalTransform)>,
     windows: Query<&Window>,
     mut tile_map: ResMut<TileMap>,
+    mut wfc_state: ResMut<WFCState>,
     mut undo_redo: ResMut<UndoRedo>,
     mut preview: Local<Option<Entity>>,
     mut egui_contexts: EguiContexts,
 ) {
-    // Block input if pointer is over UI
     if egui_contexts.ctx_mut().wants_pointer_input() {
         return;
     }
 
-    // Do nothing if no tile selected
     if selected_tile.0 == TileType::Empty {
         if let Some(entity) = *preview {
             commands.entity(entity).despawn_recursive();
@@ -177,35 +211,30 @@ pub fn place_tile_preview(
                 let z = intersection.z.round() as i32;
 
                 if x >= 0 && x < tile_map.width as i32 && z >= 0 && z < tile_map.height as i32 {
+                    let x = x as usize;
+                    let z = z as usize;
+
+                    let can_place = wfc_state.grid.can_place_tile(x, z, selected_tile.0);
                     let tile_handle = tile_assets.tiles[selected_tile.0.index()].clone();
 
-                    if mouse_input.just_pressed(MouseButton::Left) {
-                        // Spawn tile in the world
-                        let entity = commands
-                            .spawn((
-                                SceneRoot(tile_handle.clone()),
-                                Transform::from_xyz(x as f32, 0.0, z as f32),
-                            ))
-                            .id();
-
-                        tile_map.tiles[z as usize][x as usize].tile_type = selected_tile.0;
-                        tile_map.entities[z as usize][x as usize] = Some(entity);
-                        undo_redo.add_action(Action::PlaceTile(
-                            x as usize,
-                            z as usize,
-                            selected_tile.0,
-                        ));
-
-                        // Remove preview
-                        if let Some(entity) = *preview {
-                            commands.entity(entity).despawn_recursive();
-                            *preview = None;
+                    if mouse_input.just_pressed(MouseButton::Left) && can_place {
+                        if place_tile(
+                            &mut commands,
+                            &mut tile_map,
+                            &mut wfc_state,
+                            &tile_assets,
+                            &selected_tile,
+                            &mut undo_redo,
+                            x,
+                            z,
+                        ) {
+                            if let Some(entity) = *preview {
+                                commands.entity(entity).despawn_recursive();
+                                *preview = None;
+                            }
+                            selected_tile.0 = TileType::Empty;
                         }
-
-                        // Deselect after placing
-                        selected_tile.0 = TileType::Empty;
                     } else {
-                        // Update preview
                         if let Some(entity) = *preview {
                             commands.entity(entity).despawn_recursive();
                         }
@@ -224,53 +253,84 @@ pub fn place_tile_preview(
     }
 }
 
-// System to place a tile at a specific grid position
+/// Places a tile at the given coordinates. Returns true if placement succeeded.
 pub fn place_tile(
+    commands: &mut Commands,
+    tile_map: &mut TileMap,
+    wfc_state: &mut WFCState,
+    tile_assets: &TileAssets,
+    selected_tile: &SelectedTile,
+    undo_redo: &mut UndoRedo,
+    x: usize,
+    z: usize,
+) -> bool {
+    if selected_tile.0 == TileType::Empty {
+        return false;
+    }
+
+    if x >= tile_map.width || z >= tile_map.height {
+        return false;
+    }
+
+    if !wfc_state.grid.can_place_tile(x, z, selected_tile.0) {
+        return false;
+    }
+
+    if wfc_state.grid.place_tile(x, z, selected_tile.0) {
+        let entity = commands
+            .spawn((
+                SceneRoot(tile_assets.tiles[selected_tile.0.index()].clone()),
+                Transform::from_xyz(x as f32, 0.0, z as f32),
+            ))
+            .id();
+
+        tile_map.tiles[z][x].tile_type = selected_tile.0;
+        tile_map.entities[z][x] = Some(entity);
+        undo_redo.add_action(Action::PlaceTile(x, z, selected_tile.0));
+        return true;
+    }
+
+    false
+}
+
+pub fn update_placement_highlights(
     mut commands: Commands,
-    tile_assets: Res<TileAssets>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    wfc_state: Res<WFCState>,
     selected_tile: Res<SelectedTile>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
-    camera: Query<(&Camera, &GlobalTransform)>,
-    windows: Query<&Window>,
-    mut undo_redo: ResMut<UndoRedo>,
-    mut tile_map: ResMut<TileMap>,
+    highlight_materials: Res<HighlightMaterials>,
+    query: Query<Entity, With<PlacementHighlight>>,
 ) {
-    let Ok(window) = windows.get_single() else {
+    // Removes old highlights
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    if selected_tile.0 == TileType::Empty {
         return;
-    };
-    let Ok((camera, camera_transform)) = camera.get_single() else {
-        return;
-    };
+    }
 
-    if mouse_input.just_pressed(MouseButton::Left) {
-        if let Some(cursor_pos) = window.cursor_position() {
-            if let Some(ray) = camera.viewport_to_world(camera_transform, cursor_pos).ok() {
-                let plane = InfinitePlane3d::new(Vec3::Y);
-                if let Some(distance) = ray.intersect_plane(Vec3::ZERO, plane) {
-                    let intersection = ray.get_point(distance);
-                    let x = intersection.x.round() as i32;
-                    let z = intersection.z.round() as i32;
+    let tile_mesh = meshes.add(Plane3d::default().mesh().size(1.0, 1.0));
 
-                    if x >= 0 && x < tile_map.width as i32 && z >= 0 && z < tile_map.height as i32 {
-                        let tile_handle = tile_assets.tiles[selected_tile.0.index()].clone();
+    // For each grid cell
+    for y in 0..wfc_state.grid.height {
+        for x in 0..wfc_state.grid.width {
+            let idx = wfc_state.grid.idx(x, y);
+            let cell = &wfc_state.grid.cells[idx];
 
-                        // Spawn the tile scene at grid position
-                        commands.spawn((
-                            SceneRoot(tile_handle),
-                            Transform::from_xyz(x as f32, 0.0, z as f32),
-                        ));
+            if !cell.collapsed && cell.possible[selected_tile.0.index()] {
+                let material = if wfc_state.grid.can_place_tile(x, y, selected_tile.0) {
+                    highlight_materials.valid.clone()
+                } else {
+                    highlight_materials.invalid.clone()
+                };
 
-                        // Add tile to TileMap resource
-                        tile_map.tiles[z as usize][x as usize].tile_type = selected_tile.0;
-
-                        // Add action to UndoRedo
-                        undo_redo.add_action(Action::PlaceTile(
-                            x as usize,
-                            z as usize,
-                            selected_tile.0,
-                        ));
-                    }
-                }
+                commands.spawn((
+                    Mesh3d(tile_mesh.clone()),
+                    MeshMaterial3d(material),
+                    Transform::from_xyz(x as f32, 0.02, y as f32),
+                    PlacementHighlight,
+                ));
             }
         }
     }
