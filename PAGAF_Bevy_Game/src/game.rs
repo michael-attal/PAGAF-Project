@@ -1,6 +1,18 @@
 use bevy::prelude::*;
 use bevy::math::primitives::Cuboid;
 
+#[derive(Resource)]
+pub struct GamePause {
+    pub paused: bool,
+}
+
+impl Default for GamePause {
+    fn default() -> Self {
+        Self { paused: false }
+    }
+}
+
+
 #[derive(Component)]
 pub struct RotatingCube;
 
@@ -36,10 +48,6 @@ pub fn setup_game(
         })),
         Transform::from_xyz(0.0, 0.0, 0.0),
         RotatingCube,
-    ));
-
-    commands.spawn(AudioPlayer::new(
-        asset_server.load("sounds/background.ogg"),
     ));
 }
 

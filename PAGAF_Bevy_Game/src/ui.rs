@@ -1,9 +1,11 @@
 use bevy::audio::Volume;
-use crate::app_config::{GameSettings, GameState, GraphicsQuality};
+use crate::app_config::{GameSettings, GameState, GraphicsQuality, BackgroundMusic};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
 
 pub fn main_menu(
+    /* mut commands: Commands,
+    asset_server: Res<AssetServer>, */
     mut contexts: EguiContexts,
     mut next_state: ResMut<NextState<GameState>>,
     mut exit: EventWriter<bevy::app::AppExit>,
@@ -28,6 +30,8 @@ pub fn main_menu(
             }
         });
     });
+
+
 }
 
 pub fn settings_menu(
@@ -119,6 +123,13 @@ pub fn load_game_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextSta
     });
 }
 
-pub fn update_volume(settings: Res<GameSettings>, mut global_volume: ResMut<GlobalVolume>) {
-    global_volume.volume = Volume::Linear(settings.volume);
+pub fn update_volume(
+    settings: Res<GameSettings>,
+    mut query: Query<&mut AudioSink, With<BackgroundMusic>>,
+) {
+    if settings.is_changed() {
+        if let Ok(mut sink) = query.get_single_mut() {
+            sink.set_volume(Volume::Linear(settings.volume));
+        }
+    }
 }
