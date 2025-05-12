@@ -58,7 +58,11 @@ impl UndoRedo {
                     let entity = commands
                         .spawn((
                             SceneRoot(handle),
-                            Transform::from_xyz(*x as f32, 0.0, *y as f32),
+                            Transform {
+                                translation: Vec3::new(*x as f32, 0.0, *y as f32),
+                                scale: tile_type.scale(),
+                                ..default()
+                            },
                         ))
                         .id();
                     tilemap.entities[*y][*x] = Some(entity);

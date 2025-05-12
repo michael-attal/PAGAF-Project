@@ -67,6 +67,18 @@ impl TileType {
             _ => None,
         }
     }
+
+    // To scale cases and models
+    pub fn scale(self) -> Vec3 {
+        match self {
+            TileType::Residential => Vec3::splat(0.1),
+            TileType::Commercial => Vec3::splat(0.05),
+            TileType::Industrial => Vec3::splat(0.2),
+            TileType::Road => Vec3::splat(0.25),
+            TileType::Park => Vec3::splat(0.14),
+            TileType::Empty => Vec3::ONE,
+        }
+    }
 }
 
 // Resource to store the map data
@@ -242,7 +254,11 @@ pub fn place_tile_preview(
                             commands
                                 .spawn((
                                     SceneRoot(tile_handle),
-                                    Transform::from_xyz(x as f32, 0.01, z as f32),
+                                    Transform {
+                                        translation: Vec3::new(x as f32, 0.01, z as f32),
+                                        scale: selected_tile.0.scale(),
+                                        ..default()
+                                    },
                                 ))
                                 .id(),
                         );
@@ -280,7 +296,11 @@ pub fn place_tile(
         let entity = commands
             .spawn((
                 SceneRoot(tile_assets.tiles[selected_tile.0.index()].clone()),
-                Transform::from_xyz(x as f32, 0.0, z as f32),
+                Transform {
+                    translation: Vec3::new(x as f32, 0.0, z as f32),
+                    scale: selected_tile.0.scale(),
+                    ..default()
+                },
             ))
             .id();
 
