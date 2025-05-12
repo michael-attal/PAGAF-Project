@@ -1,6 +1,7 @@
 use crate::tile_loader::TileAssets;
 use crate::undo_redo::{Action, UndoRedo};
 use bevy::prelude::*;
+use bevy_egui::EguiContexts;
 
 // Tile component storing type and position
 #[derive(Component)]
@@ -20,36 +21,52 @@ pub enum TileType {
     Park,
 }
 
+impl TileType {
+    pub const ALL: [TileType; 5] = [
+        TileType::Residential,
+        TileType::Commercial,
+        TileType::Industrial,
+        TileType::Road,
+        TileType::Park,
+    ];
+}
+
 // Resource to store the map data
+
 #[derive(Resource)]
 pub struct TileMap {
     pub tiles: Vec<Vec<Tile>>,
     pub width: usize,
     pub height: usize,
+    pub entities: Vec<Vec<Option<Entity>>>, // Track spawned tile entities
 }
 
-// Basic implementation for TileMap
 impl Default for TileMap {
     fn default() -> Self {
         let width = 50;
         let height = 50;
         let mut tiles = Vec::with_capacity(height);
+        let mut entities = Vec::with_capacity(height);
 
         for y in 0..height {
             let mut row = Vec::with_capacity(width);
+            let mut entity_row = Vec::with_capacity(width);
             for x in 0..width {
                 row.push(Tile {
                     tile_type: TileType::Empty,
                     position: IVec2::new(x as i32, y as i32),
                 });
+                entity_row.push(None);
             }
             tiles.push(row);
+            entities.push(entity_row);
         }
 
         Self {
             tiles,
             width,
             height,
+            entities,
         }
     }
 }
@@ -87,6 +104,7 @@ pub fn setup_grid(
 
     commands.insert_resource(TileMap::default());
 }
+
 pub fn place_tile_preview(
     mut commands: Commands,
     tile_assets: Res<TileAssets>,
@@ -97,7 +115,7 @@ pub fn place_tile_preview(
     mut tile_map: ResMut<TileMap>,
     mut undo_redo: ResMut<UndoRedo>,
     mut preview: Local<Option<Entity>>,
-    mut egui_contexts: bevy_egui::EguiContexts,
+    mut egui_contexts: EguiContexts,
 ) {
     // Block input if pointer is over UI
     if egui_contexts.ctx_mut().wants_pointer_input() {
@@ -113,8 +131,12 @@ pub fn place_tile_preview(
         return;
     }
 
-    let Ok(window) = windows.get_single() else { return };
-    let Ok((camera, camera_transform)) = camera.get_single() else { return };
+    let Ok(window) = windows.get_single() else {
+        return;
+    };
+    let Ok((camera, camera_transform)) = camera.get_single() else {
+        return;
+    };
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(ray) = camera.viewport_to_world(camera_transform, cursor_pos).ok() {
@@ -128,29 +150,32 @@ pub fn place_tile_preview(
                     let tile_handle = tile_assets.tiles[selected_tile.0 as usize].clone();
 
                     if mouse_input.just_pressed(MouseButton::Left) {
-                        // Place tile
-                        commands.spawn((
-                            SceneRoot(tile_handle.clone()),
-                            Transform::from_xyz(x as f32, 0.0, z as f32),
-                        ));
+                        // Spawn tile in the world
+                        let entity = commands
+                            .spawn((
+                                SceneRoot(tile_handle.clone()),
+                                Transform::from_xyz(x as f32, 0.0, z as f32),
+                            ))
+                            .id();
 
                         tile_map.tiles[z as usize][x as usize].tile_type = selected_tile.0;
+                        tile_map.entities[z as usize][x as usize] = Some(entity);
                         undo_redo.add_action(Action::PlaceTile(
                             x as usize,
                             z as usize,
                             selected_tile.0,
                         ));
 
-                        // Deselect after placing
-                        selected_tile.0 = TileType::Empty;
-
                         // Remove preview
                         if let Some(entity) = *preview {
                             commands.entity(entity).despawn_recursive();
                             *preview = None;
                         }
+
+                        // Deselect after placing
+                        selected_tile.0 = TileType::Empty;
                     } else {
-                        // Update preview entity
+                        // Update preview
                         if let Some(entity) = *preview {
                             commands.entity(entity).despawn_recursive();
                         }

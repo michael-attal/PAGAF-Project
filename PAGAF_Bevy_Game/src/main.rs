@@ -15,7 +15,7 @@ use game::GamePause;
 use ingame_ui::AvailableTiles;
 use tile_loader::load_tiles;
 use tilemap::{SelectedTile, TileType, place_tile, setup_grid};
-use undo_redo::{UndoRedo, undo_redo_ui};
+use crate::undo_redo::UndoRedo;
 
 fn main() {
     App::new()

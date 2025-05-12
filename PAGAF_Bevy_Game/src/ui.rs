@@ -1,5 +1,5 @@
+use crate::app_config::{BackgroundMusic, GameSettings, GameState, GraphicsQuality};
 use bevy::audio::Volume;
-use crate::app_config::{GameSettings, GameState, GraphicsQuality, BackgroundMusic};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
 
@@ -30,8 +30,6 @@ pub fn main_menu(
             }
         });
     });
-
-
 }
 
 pub fn settings_menu(
