@@ -1,7 +1,8 @@
-mod AppConfig;
+mod app_config;
 mod ui;
+mod game;
 
-use crate::AppConfig::{GameSettings, GameState};
+use crate::app_config::{GameSettings, GameState};
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
@@ -22,5 +23,7 @@ fn main() {
             Update,
             ui::load_game_menu.run_if(in_state(GameState::LoadGame)),
         )
+        .add_systems(OnEnter(GameState::InGame), game::setup_game)
+        .add_systems(Update, game::rotate_cube.run_if(in_state(GameState::InGame)))
         .run();
 }
