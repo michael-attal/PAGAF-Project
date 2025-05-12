@@ -5,6 +5,7 @@ mod game;
 use crate::app_config::{GameSettings, GameState};
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
+use bevy::audio::*;
 
 fn main() {
     App::new()
@@ -14,6 +15,7 @@ fn main() {
         })
         .init_state::<GameState>()
         .insert_resource(GameSettings::default())
+        .add_systems(Update, ui::update_volume)
         .add_systems(Update, ui::main_menu.run_if(in_state(GameState::MainMenu)))
         .add_systems(
             Update,
