@@ -4,7 +4,12 @@ use bevy::math::primitives::Cuboid;
 #[derive(Component)]
 pub struct RotatingCube;
 
-pub fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials: ResMut<Assets<StandardMaterial>>) {
+pub fn setup_game(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>
+) {
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 2.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -31,6 +36,10 @@ pub fn setup_game(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut 
         })),
         Transform::from_xyz(0.0, 0.0, 0.0),
         RotatingCube,
+    ));
+
+    commands.spawn(AudioPlayer::new(
+        asset_server.load("sounds/background.ogg"),
     ));
 }
 

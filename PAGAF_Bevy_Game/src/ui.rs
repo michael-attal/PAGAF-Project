@@ -1,3 +1,4 @@
+use bevy::audio::Volume;
 use crate::app_config::{GameSettings, GameState, GraphicsQuality};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
@@ -116,4 +117,8 @@ pub fn load_game_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextSta
             }
         });
     });
+}
+
+pub fn update_volume(settings: Res<GameSettings>, mut global_volume: ResMut<GlobalVolume>) {
+    global_volume.volume = Volume::Linear(settings.volume);
 }
