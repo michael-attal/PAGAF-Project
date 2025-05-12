@@ -76,7 +76,12 @@ pub fn tile_panel(
                         .selectable_label(selected, format!("{}\n{:?}", tile_icon(tile), tile))
                         .clicked()
                     {
-                        selected_tile.0 = *tile;
+                        // Toggle selection
+                        if selected_tile.0 == *tile {
+                            selected_tile.0 = TileType::Empty;
+                        } else {
+                            selected_tile.0 = *tile;
+                        }
                     }
                 }
             });

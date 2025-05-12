@@ -29,7 +29,7 @@ fn main() {
         .insert_resource(GameSettings::default())
         .insert_resource(GamePause::default())
         .insert_resource(AvailableTiles::default())
-        .insert_resource(SelectedTile(TileType::Residential))
+        .insert_resource(SelectedTile(TileType::Empty))
         .insert_resource(UndoRedo::default())
         .init_state::<GameState>()
         .add_systems(

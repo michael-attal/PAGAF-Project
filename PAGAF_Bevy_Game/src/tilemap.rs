@@ -87,21 +87,35 @@ pub fn setup_grid(
 
     commands.insert_resource(TileMap::default());
 }
-
-
 pub fn place_tile_preview(
     mut commands: Commands,
     tile_assets: Res<TileAssets>,
-    selected_tile: Res<SelectedTile>,
+    mut selected_tile: ResMut<SelectedTile>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     camera: Query<(&Camera, &GlobalTransform)>,
     windows: Query<&Window>,
     mut tile_map: ResMut<TileMap>,
     mut undo_redo: ResMut<UndoRedo>,
     mut preview: Local<Option<Entity>>,
+    mut egui_contexts: bevy_egui::EguiContexts,
 ) {
+    // Block input if pointer is over UI
+    if egui_contexts.ctx_mut().wants_pointer_input() {
+        return;
+    }
+
+    // Do nothing if no tile selected
+    if selected_tile.0 == TileType::Empty {
+        if let Some(entity) = *preview {
+            commands.entity(entity).despawn_recursive();
+            *preview = None;
+        }
+        return;
+    }
+
     let Ok(window) = windows.get_single() else { return };
     let Ok((camera, camera_transform)) = camera.get_single() else { return };
+
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(ray) = camera.viewport_to_world(camera_transform, cursor_pos).ok() {
             let plane = InfinitePlane3d::new(Vec3::Y);
@@ -114,20 +128,40 @@ pub fn place_tile_preview(
                     let tile_handle = tile_assets.tiles[selected_tile.0 as usize].clone();
 
                     if mouse_input.just_pressed(MouseButton::Left) {
+                        // Place tile
                         commands.spawn((
                             SceneRoot(tile_handle.clone()),
                             Transform::from_xyz(x as f32, 0.0, z as f32),
                         ));
+
                         tile_map.tiles[z as usize][x as usize].tile_type = selected_tile.0;
-                        undo_redo.add_action(Action::PlaceTile(x as usize, z as usize, selected_tile.0));
+                        undo_redo.add_action(Action::PlaceTile(
+                            x as usize,
+                            z as usize,
+                            selected_tile.0,
+                        ));
+
+                        // Deselect after placing
+                        selected_tile.0 = TileType::Empty;
+
+                        // Remove preview
+                        if let Some(entity) = *preview {
+                            commands.entity(entity).despawn_recursive();
+                            *preview = None;
+                        }
                     } else {
+                        // Update preview entity
                         if let Some(entity) = *preview {
                             commands.entity(entity).despawn_recursive();
                         }
-                        *preview = Some(commands.spawn((
-                            SceneRoot(tile_handle),
-                            Transform::from_xyz(x as f32, 0.01, z as f32),
-                        )).id());
+                        *preview = Some(
+                            commands
+                                .spawn((
+                                    SceneRoot(tile_handle),
+                                    Transform::from_xyz(x as f32, 0.01, z as f32),
+                                ))
+                                .id(),
+                        );
                     }
                 }
             }
@@ -135,7 +169,7 @@ pub fn place_tile_preview(
     }
 }
 
-// System to place a tile GLTF scene at a specific grid position
+// System to place a tile at a specific grid position
 pub fn place_tile(
     mut commands: Commands,
     tile_assets: Res<TileAssets>,
