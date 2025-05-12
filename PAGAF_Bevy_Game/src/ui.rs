@@ -1,4 +1,4 @@
-use crate::AppConfig::{GameSettings, GameState, GraphicsQuality};
+use crate::app_config::{GameSettings, GameState, GraphicsQuality};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
 
