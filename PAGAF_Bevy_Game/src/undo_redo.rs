@@ -54,7 +54,7 @@ impl UndoRedo {
                     self.history.push(action.clone());
                     tilemap.tiles[*y][*x].tile_type = *tile_type;
 
-                    let handle = tile_assets.tiles[*tile_type as usize].clone();
+                    let handle = tile_assets.tiles[tile_type.index()].clone();
                     let entity = commands
                         .spawn((
                             SceneRoot(handle),

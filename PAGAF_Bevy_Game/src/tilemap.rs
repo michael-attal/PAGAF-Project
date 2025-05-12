@@ -11,14 +11,15 @@ pub struct Tile {
 }
 
 // Enum representing different types of tiles
+#[repr(usize)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum TileType {
-    Empty,
-    Residential,
-    Commercial,
-    Industrial,
-    Road,
-    Park,
+    Empty = 0,
+    Residential = 1,
+    Commercial = 2,
+    Industrial = 3,
+    Road = 4,
+    Park = 5,
 }
 
 impl TileType {
@@ -29,6 +30,35 @@ impl TileType {
         TileType::Road,
         TileType::Park,
     ];
+
+    /// Index used in vectors and for file names.
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    /// Path of the GLB scene for this tile.
+    pub fn scene_path(self) -> Option<String> {
+        match self {
+            TileType::Empty => None,
+            _ => Some(format!(
+                "models/tiles/tile_{}/tile.glb#Scene0",
+                //self.index()
+                1
+            )),
+        }
+    }
+
+    pub fn from_index(index: usize) -> Option<Self> {
+        match index {
+            0 => Some(TileType::Empty),
+            1 => Some(TileType::Residential),
+            2 => Some(TileType::Commercial),
+            3 => Some(TileType::Industrial),
+            4 => Some(TileType::Road),
+            5 => Some(TileType::Park),
+            _ => None,
+        }
+    }
 }
 
 // Resource to store the map data
@@ -147,7 +177,7 @@ pub fn place_tile_preview(
                 let z = intersection.z.round() as i32;
 
                 if x >= 0 && x < tile_map.width as i32 && z >= 0 && z < tile_map.height as i32 {
-                    let tile_handle = tile_assets.tiles[selected_tile.0 as usize].clone();
+                    let tile_handle = tile_assets.tiles[selected_tile.0.index()].clone();
 
                     if mouse_input.just_pressed(MouseButton::Left) {
                         // Spawn tile in the world
@@ -222,7 +252,7 @@ pub fn place_tile(
                     let z = intersection.z.round() as i32;
 
                     if x >= 0 && x < tile_map.width as i32 && z >= 0 && z < tile_map.height as i32 {
-                        let tile_handle = tile_assets.tiles[selected_tile.0 as usize].clone();
+                        let tile_handle = tile_assets.tiles[selected_tile.0.index()].clone();
 
                         // Spawn the tile scene at grid position
                         commands.spawn((

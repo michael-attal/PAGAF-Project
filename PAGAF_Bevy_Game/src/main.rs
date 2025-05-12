@@ -10,12 +10,12 @@ mod wfc;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
+use crate::undo_redo::UndoRedo;
 use app_config::{GameSettings, GameState};
 use game::GamePause;
 use ingame_ui::AvailableTiles;
 use tile_loader::load_tiles;
 use tilemap::{SelectedTile, TileType, place_tile, setup_grid};
-use crate::undo_redo::UndoRedo;
 
 fn main() {
     App::new()
@@ -32,9 +32,10 @@ fn main() {
         .insert_resource(SelectedTile(TileType::Empty))
         .insert_resource(UndoRedo::default())
         .init_state::<GameState>()
+        .add_systems(Startup, (load_tiles, setup_grid))
         .add_systems(
-            Startup,
-            (app_config::play_background_music, load_tiles, setup_grid),
+            PostStartup,
+            (/*wfc::generate_level,*/app_config::play_background_music),
         )
         .add_systems(OnEnter(GameState::InGame), game::setup_game)
         .add_systems(
