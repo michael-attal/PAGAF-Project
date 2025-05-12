@@ -1,9 +1,9 @@
-use crate::app_config::{GameSettings, GameState};
-use crate::game::GamePause;
-use crate::tilemap::{SelectedTile, TileMap, TileType};
-use crate::undo_redo::UndoRedo;
 use bevy::prelude::*;
-use bevy_egui::{EguiContexts, egui};
+use bevy_egui::{egui, EguiContexts};
+use crate::app_config::GameState;
+use crate::game::GamePause;
+use crate::tilemap::{TileType, SelectedTile, TileMap};
+use crate::undo_redo::UndoRedo;
 
 #[derive(Resource)]
 pub struct AvailableTiles {
@@ -24,6 +24,17 @@ impl Default for AvailableTiles {
     }
 }
 
+fn tile_icon(tile: &TileType) -> &'static str {
+    match tile {
+        TileType::Residential => "🏠",
+        TileType::Commercial => "🏢",
+        TileType::Industrial => "🏭",
+        TileType::Road => "🛣️",
+        TileType::Park => "🌳",
+        _ => "❓",
+    }
+}
+
 pub fn game_menu(
     mut contexts: EguiContexts,
     mut next_state: ResMut<NextState<GameState>>,
@@ -32,10 +43,7 @@ pub fn game_menu(
     egui::Window::new("Menu")
         .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-10.0, 10.0))
         .show(contexts.ctx_mut(), |ui| {
-            if ui
-                .button(if pause.paused { "Resume" } else { "Pause" })
-                .clicked()
-            {
+            if ui.button(if pause.paused { "Resume" } else { "Pause" }).clicked() {
                 pause.paused = !pause.paused;
             }
             if ui.button("Settings").clicked() {
@@ -63,8 +71,9 @@ pub fn tile_panel(
         .show(contexts.ctx_mut(), |ui| {
             ui.horizontal(|ui| {
                 for tile in &tiles.tiles {
+                    let selected = *tile == selected_tile.0;
                     if ui
-                        .selectable_label(*tile == selected_tile.0, format!("{:?}", tile))
+                        .selectable_label(selected, format!("{}\n{:?}", tile_icon(tile), tile))
                         .clicked()
                     {
                         selected_tile.0 = *tile;

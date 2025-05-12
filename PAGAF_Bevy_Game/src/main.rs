@@ -48,7 +48,7 @@ fn main() {
                 game::camera_movement.run_if(in_state(GameState::InGame)),
                 ingame_ui::game_menu.run_if(in_state(GameState::InGame)),
                 ingame_ui::tile_panel.run_if(in_state(GameState::InGame)),
-                tilemap::place_tile.run_if(in_state(GameState::InGame)),
+                tilemap::place_tile_preview.run_if(in_state(GameState::InGame)),
                 ui::update_volume,
             ),
         )

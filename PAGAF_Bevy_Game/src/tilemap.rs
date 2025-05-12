@@ -88,6 +88,53 @@ pub fn setup_grid(
     commands.insert_resource(TileMap::default());
 }
 
+
+pub fn place_tile_preview(
+    mut commands: Commands,
+    tile_assets: Res<TileAssets>,
+    selected_tile: Res<SelectedTile>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    camera: Query<(&Camera, &GlobalTransform)>,
+    windows: Query<&Window>,
+    mut tile_map: ResMut<TileMap>,
+    mut undo_redo: ResMut<UndoRedo>,
+    mut preview: Local<Option<Entity>>,
+) {
+    let Ok(window) = windows.get_single() else { return };
+    let Ok((camera, camera_transform)) = camera.get_single() else { return };
+    if let Some(cursor_pos) = window.cursor_position() {
+        if let Some(ray) = camera.viewport_to_world(camera_transform, cursor_pos).ok() {
+            let plane = InfinitePlane3d::new(Vec3::Y);
+            if let Some(distance) = ray.intersect_plane(Vec3::ZERO, plane) {
+                let intersection = ray.get_point(distance);
+                let x = intersection.x.round() as i32;
+                let z = intersection.z.round() as i32;
+
+                if x >= 0 && x < tile_map.width as i32 && z >= 0 && z < tile_map.height as i32 {
+                    let tile_handle = tile_assets.tiles[selected_tile.0 as usize].clone();
+
+                    if mouse_input.just_pressed(MouseButton::Left) {
+                        commands.spawn((
+                            SceneRoot(tile_handle.clone()),
+                            Transform::from_xyz(x as f32, 0.0, z as f32),
+                        ));
+                        tile_map.tiles[z as usize][x as usize].tile_type = selected_tile.0;
+                        undo_redo.add_action(Action::PlaceTile(x as usize, z as usize, selected_tile.0));
+                    } else {
+                        if let Some(entity) = *preview {
+                            commands.entity(entity).despawn_recursive();
+                        }
+                        *preview = Some(commands.spawn((
+                            SceneRoot(tile_handle),
+                            Transform::from_xyz(x as f32, 0.01, z as f32),
+                        )).id());
+                    }
+                }
+            }
+        }
+    }
+}
+
 // System to place a tile GLTF scene at a specific grid position
 pub fn place_tile(
     mut commands: Commands,
