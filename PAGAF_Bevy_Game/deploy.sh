@@ -2,6 +2,11 @@
 
 set -e
 
+if ! command -v wasm-bindgen &> /dev/null; then
+    echo "❌ wasm-bindgen is not installed. Installing it..."
+    cargo install wasm-bindgen-cli
+fi
+
 echo "🔧 Building Bevy app for wasm32..."
 cargo build --release --target wasm32-unknown-unknown
 
