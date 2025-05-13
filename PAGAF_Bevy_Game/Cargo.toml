@@ -7,7 +7,7 @@ edition = "2024"
 bevy = { version = "0.16.0", features=["jpeg"] }
 bevy_egui = "0.34.1"
 bevy_mod_picking = "0.20.1"
-rand = "0.9.1"
+rand = { version = "0.9.1", features = ["std_rng", "std"] }
 wasm-bindgen = "0.2"
 
 # Enable a small amount of optimization in the dev profile.
@@ -17,3 +17,7 @@ opt-level = 1
 # Enable a large amount of optimization in the dev profile for dependencies.
 [profile.dev.package."*"]
 opt-level = 3
+
+# Patch nécessaire pour la compilation en wasm sinon rand non dispo
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
