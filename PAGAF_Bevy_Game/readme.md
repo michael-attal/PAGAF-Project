@@ -7,6 +7,12 @@ Compilation:
 ```cargo build --release --target wasm32-unknown-unknown```
 
 
+if compilation doesn't work, use:
+
+
+RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo build --release --target wasm32-unknown-unknown
+
+
 Generate javascript files:
 
 
