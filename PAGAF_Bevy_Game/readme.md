@@ -1,22 +1,27 @@
 ## Web build & preview (WASM)
 
+### Install wasm-bindgen-cli if not already installed
+```
+cargo install wasm-bindgen-cli
+```
+
 ### Compile for WebAssembly:
-"""
+```
 cargo build --release --target wasm32-unknown-unknown
-"""
+```
 
 If it fails:
-"""
+```
 RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo build --release --target wasm32-unknown-unknown
-"""
+```
 
 ### Generate JS bindings:
-"""
-wasm-bindgen --out-dir ./docs/ --target web ./target/wasm32-unknown-unknown/release/PAGAF_Bevy_Game.wasm
-"""
+```
+wasm-bindgen --out-dir ../docs/ --target web ./target/wasm32-unknown-unknown/release/PAGAF_Bevy_Game.wasm
+```
 
-Make sure `index.html` is also inside the `docs/` folder.
-Same for the folder `assets`
+Make sure `index.html` is also inside the `../docs/` folder.
+Same for the folder `assets`.
 
 ### Local preview:
 """
