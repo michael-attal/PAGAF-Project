@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://3qplrqa2r5ym"]
+
+[ext_resource type="Script" path="res://boids_manager.gd" id="1_yy7cq"]
+[ext_resource type="PackedScene" uid="uid://dxmh1fm5csj0d" path="res://birb_boid.tscn" id="2_50cda"]
+
+[node name="main" type="Node2D"]
+
+[node name="BoidsManager" type="Node2D" parent="."]
+position = Vector2(600, 300)
+script = ExtResource("1_yy7cq")
+boid_entity = ExtResource("2_50cda")
+count = 100
+separation_radius = 100.0
+heading_radius = 200.0
+cohesion_radius = 300.0
+separation_factor = 0.03
+heading_factor = 0.1
+cohesion_factor = 0.1

@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://dxmh1fm5csj0d"]
+
+[ext_resource type="Texture2D" uid="uid://dhuc40iv1wc7" path="res://textures/birb.PNG" id="1_53k4o"]
+[ext_resource type="Script" path="res://simple_boid.gd" id="2_p2qgd"]
+
+[node name="BirbBoid" type="Sprite2D"]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("1_53k4o")
+script = ExtResource("2_p2qgd")
+speed = 10.0
