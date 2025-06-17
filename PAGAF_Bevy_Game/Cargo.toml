@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.16.0", features=["jpeg"] }
+bevy = { version = "0.16.1", features=["jpeg"] }
 bevy_egui = "0.34.1"
 bevy_mod_picking = "0.20.1"
 rand = { version = "0.9.1", features = ["std_rng", "std"] }

@@ -50,7 +50,8 @@ impl TileType {
         match self {
             TileType::Empty => None,
             _ => Some(format!(
-                "models/tiles/tile_{}/tile.glb#Scene0",
+                //"models/tiles/tile_{}/tile.glb#Scene0", // FIXME: À corriger selon le type de batiment (Residential Commercial Industrial Road Park)
+                "models/tiles/residential/residential_{}.glb#Scene0",
                 self.index()
             )),
         }
@@ -244,7 +245,9 @@ pub fn place_tile_preview(
                                 commands.entity(entity).despawn_recursive();
                                 *preview = None;
                             }
-                            selected_tile.0 = TileType::Empty;
+                            
+                            // While user doesn't change the building category, don't change the TitleType selected
+                            // selected_tile.0 = TileType::Empty;
                         }
                     } else {
                         if let Some(entity) = *preview {
