@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use crate::app_config::DestroyableEntity;
+use crate::tilemap::{SelectedTile, TileType};
 
 #[derive(Resource)]
 pub struct GamePause {
@@ -11,15 +13,24 @@ impl Default for GamePause {
     }
 }
 
-pub fn setup_game(mut commands: Commands) {
+pub fn setup_game(mut commands: Commands, entity_query: Query<Entity, With<DestroyableEntity>>, mut selected_tile: ResMut<SelectedTile>) {
+
+    selected_tile.0 = TileType::Empty;
+
+    for e in entity_query.iter() {
+        commands.entity(e).despawn();
+    }
+
     // Camera setup
     commands.spawn((
+        DestroyableEntity,
         Camera3d::default(),
         Transform::from_xyz(10.0, 15.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // Lighting setup
     commands.spawn((
+        DestroyableEntity,
         DirectionalLight {
             shadows_enabled: true,
             ..default()
