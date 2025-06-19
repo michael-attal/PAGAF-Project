@@ -18,6 +18,5 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
-# Patch nécessaire pour la compilation en wasm sinon rand non dispo
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+[target.'cfg(all(target_family = "wasm", any(target_os = "unknown", target_os = "none")))'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
