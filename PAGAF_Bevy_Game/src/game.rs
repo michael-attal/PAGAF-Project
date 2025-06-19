@@ -30,8 +30,14 @@ pub fn setup_game(mut commands: Commands) {
 pub fn camera_movement(
     mut query: Query<&mut Transform, With<Camera3d>>,
     input: Res<ButtonInput<KeyCode>>,
+    game_pause: Res<GamePause>,
     time: Res<Time>,
 ) {
+
+    if game_pause.paused{
+        return;
+    }
+
     let speed = 10.0;
     let rotation_speed = 1.0;
 
