@@ -3,6 +3,8 @@ use crate::undo_redo::{Action, UndoRedo};
 use crate::wfc::WFCState;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
+use crate::app_config::DestroyableEntity;
+use crate::game::GamePause;
 
 #[derive(Component)]
 pub struct PlacementHighlight;
@@ -193,9 +195,15 @@ pub fn place_tile_preview(
     mut tile_map: ResMut<TileMap>,
     mut wfc_state: ResMut<WFCState>,
     mut undo_redo: ResMut<UndoRedo>,
+    game_pause: Res<GamePause>,
     mut preview: Local<Option<Entity>>,
     mut egui_contexts: EguiContexts,
 ) {
+
+    if game_pause.paused {
+        return;
+    }
+
     if egui_contexts.ctx_mut().wants_pointer_input() {
         return;
     }
@@ -234,6 +242,7 @@ pub fn place_tile_preview(
                         if place_tile(
                             &mut commands,
                             &mut tile_map,
+                            &game_pause,
                             &mut wfc_state,
                             &tile_assets,
                             &selected_tile,
@@ -276,6 +285,7 @@ pub fn place_tile_preview(
 pub fn place_tile(
     commands: &mut Commands,
     tile_map: &mut TileMap,
+    game_pause: &GamePause,
     wfc_state: &mut WFCState,
     tile_assets: &TileAssets,
     selected_tile: &SelectedTile,
@@ -283,6 +293,11 @@ pub fn place_tile(
     x: usize,
     z: usize,
 ) -> bool {
+
+    if game_pause.paused {
+        return false;
+    }
+
     if selected_tile.0 == TileType::Empty {
         return false;
     }
@@ -298,6 +313,7 @@ pub fn place_tile(
     if wfc_state.grid.place_tile(x, z, selected_tile.0) {
         let entity = commands
             .spawn((
+                DestroyableEntity,
                 SceneRoot(tile_assets.tiles[selected_tile.0.index()].clone()),
                 Transform {
                     translation: Vec3::new(x as f32, 0.0, z as f32),
@@ -349,6 +365,7 @@ pub fn update_placement_highlights(
                 };
 
                 commands.spawn((
+                    DestroyableEntity,
                     Mesh3d(tile_mesh.clone()),
                     MeshMaterial3d(material),
                     Transform::from_xyz(x as f32, 0.02, y as f32),

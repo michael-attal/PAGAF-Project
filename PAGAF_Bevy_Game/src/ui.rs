@@ -32,68 +32,68 @@ pub fn main_menu(
     });
 }
 
-pub fn settings_menu(
-    mut contexts: EguiContexts,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut settings: ResMut<GameSettings>,
-) {
-    // TODO: Handle settings
-    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        ui.vertical_centered(|ui| {
-            ui.heading("Settings");
-
-            ui.add_space(20.0);
-
-            ui.vertical_centered(|ui| {
-                ui.set_max_width(300.0);
-                ui.horizontal(|ui| {
-                    ui.label("Volume:");
-                    ui.add(egui::Slider::new(&mut settings.volume, 0.0..=1.0));
-                });
-            });
-
-            ui.vertical_centered(|ui| {
-                ui.set_max_width(300.0);
-                ui.horizontal(|ui| {
-                    ui.label("Brightness:");
-                    ui.add(egui::Slider::new(&mut settings.brightness, 0.0..=1.0));
-                });
-            });
-
-            ui.vertical_centered(|ui| {
-                ui.set_max_width(300.0);
-                ui.horizontal(|ui| {
-                    ui.label("Graphics Quality:");
-                    egui::ComboBox::from_label("")
-                        .selected_text(format!("{:?}", settings.graphics_quality))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut settings.graphics_quality,
-                                GraphicsQuality::Low,
-                                "Low",
-                            );
-                            ui.selectable_value(
-                                &mut settings.graphics_quality,
-                                GraphicsQuality::Medium,
-                                "Medium",
-                            );
-                            ui.selectable_value(
-                                &mut settings.graphics_quality,
-                                GraphicsQuality::High,
-                                "High",
-                            );
-                        });
-                });
-            });
-
-            ui.add_space(20.0);
-
-            if ui.button("Back").clicked() {
-                next_state.set(GameState::MainMenu);
-            }
-        });
-    });
-}
+// pub fn settings_menu(
+//     mut contexts: EguiContexts,
+//     mut next_state: ResMut<NextState<GameState>>,
+//     mut settings: ResMut<GameSettings>,
+// ) {
+//     // TODO: Handle settings
+//     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+//         ui.vertical_centered(|ui| {
+//             ui.heading("Settings");
+//
+//             ui.add_space(20.0);
+//
+//             ui.vertical_centered(|ui| {
+//                 ui.set_max_width(300.0);
+//                 ui.horizontal(|ui| {
+//                     ui.label("Volume:");
+//                     ui.add(egui::Slider::new(&mut settings.volume, 0.0..=1.0));
+//                 });
+//             });
+//
+//             ui.vertical_centered(|ui| {
+//                 ui.set_max_width(300.0);
+//                 ui.horizontal(|ui| {
+//                     ui.label("Brightness:");
+//                     ui.add(egui::Slider::new(&mut settings.brightness, 0.0..=1.0));
+//                 });
+//             });
+//
+//             ui.vertical_centered(|ui| {
+//                 ui.set_max_width(300.0);
+//                 ui.horizontal(|ui| {
+//                     ui.label("Graphics Quality:");
+//                     egui::ComboBox::from_label("")
+//                         .selected_text(format!("{:?}", settings.graphics_quality))
+//                         .show_ui(ui, |ui| {
+//                             ui.selectable_value(
+//                                 &mut settings.graphics_quality,
+//                                 GraphicsQuality::Low,
+//                                 "Low",
+//                             );
+//                             ui.selectable_value(
+//                                 &mut settings.graphics_quality,
+//                                 GraphicsQuality::Medium,
+//                                 "Medium",
+//                             );
+//                             ui.selectable_value(
+//                                 &mut settings.graphics_quality,
+//                                 GraphicsQuality::High,
+//                                 "High",
+//                             );
+//                         });
+//                 });
+//             });
+//
+//             ui.add_space(20.0);
+//
+//             if ui.button("Back").clicked() {
+//                 next_state.set(GameState::MainMenu);
+//             }
+//         });
+//     });
+// }
 
 pub fn load_game_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {

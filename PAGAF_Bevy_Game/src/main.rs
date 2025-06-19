@@ -45,12 +45,13 @@ fn main() {
             (
                 // UI Menus
                 ui::main_menu.run_if(in_state(GameState::MainMenu)),
-                ui::settings_menu.run_if(in_state(GameState::Settings)),
+                // ui::settings_menu.run_if(in_state(GameState::Settings)),
                 ui::load_game_menu.run_if(in_state(GameState::LoadGame)),
                 // In-game systems
                 game::camera_movement.run_if(in_state(GameState::InGame)),
                 ingame_ui::game_menu.run_if(in_state(GameState::InGame)),
                 ingame_ui::tile_panel.run_if(in_state(GameState::InGame)),
+                ingame_ui::in_game_settings.run_if(in_state(GameState::InGame)),
                 tilemap::place_tile_preview.run_if(in_state(GameState::InGame)),
                 tilemap::update_placement_highlights
                     .after(tilemap::place_tile_preview)

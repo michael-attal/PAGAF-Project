@@ -37,6 +37,9 @@ impl Default for GameSettings {
 #[derive(Component)]
 pub struct BackgroundMusic;
 
+#[derive(Component)]
+pub struct DestroyableEntity;
+
 pub fn play_background_music(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
