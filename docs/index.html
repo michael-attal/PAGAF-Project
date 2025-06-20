@@ -68,15 +68,25 @@
     </style>
 </head>
 <body>
-<button id="startButton">Start PAGAF Futuristic Bevy Game</button>
+
+<div id="divButton" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;">
+    <button id="startButton">Start PAGAF Futuristic Bevy Game</button>
+    <br />
+    <em style="text-align: center;">(Only work with Google Chrome and WebGPU flag enabled)
+        <br/>
+        <a href="chrome://flags/#enable-unsafe-webgpu">chrome://flags/#enable-unsafe-webgpu</a>
+    </em>
+</div>
 
 <script type="module">
     import init from './PAGAF_Bevy_Game.js';
 
+    const divButton = document.getElementById('divButton');
     const startButton = document.getElementById('startButton');
 
     startButton.addEventListener('click', async () => {
         startButton.remove();
+        divButton.remove();
         try {
             await init();
         } catch (error) {

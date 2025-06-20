@@ -106,3 +106,9 @@ wasm-bindgen --out-dir ../docs/ --target web ./target/wasm32-unknown-unknown/rel
 ```bash
 python3 -m http.server 8000 --directory ./../docs
 ```
+
+## Lancer ngrok pour https en localhost:
+
+```bash
+ngrok http --host-header=rewrite http://192.168.64.2:8000
+```

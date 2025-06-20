@@ -5,6 +5,14 @@ use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use crate::app_config::DestroyableEntity;
 use crate::game::GamePause;
+use bevy_hanabi::prelude::*;
+use bevy::prelude::AlphaMode;
+
+#[cfg(not(target_arch = "wasm32"))]
+use crate::particle_fx::{ParticleEffects, spawn_on_place};
+
+#[cfg(target_arch = "wasm32")]
+use crate::particle_fx::spawn_on_place;
 
 #[derive(Component)]
 pub struct PlacementHighlight;
@@ -31,6 +39,25 @@ pub enum TileType {
     Industrial = 3,
     Road = 4,
     Park = 5,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn spawn_effect(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    effects: &Res<ParticleEffects>,
+    position: Vec3,
+) {
+    spawn_on_place(commands, asset_server, effects.spawn_handle.clone(), position);
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn spawn_effect(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    position: Vec3,
+) {
+    spawn_on_place(commands, asset_server, position);
 }
 
 impl TileType {
@@ -198,13 +225,13 @@ pub fn place_tile_preview(
     game_pause: Res<GamePause>,
     mut preview: Local<Option<Entity>>,
     mut egui_contexts: EguiContexts,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    effects: Res<ParticleEffects>,
+
+    asset_server: Res<AssetServer>,
 ) {
-
-    if game_pause.paused {
-        return;
-    }
-
-    if egui_contexts.ctx_mut().wants_pointer_input() {
+    if game_pause.paused || egui_contexts.ctx_mut().wants_pointer_input() {
         return;
     }
 
@@ -216,12 +243,8 @@ pub fn place_tile_preview(
         return;
     }
 
-    let Ok(window) = windows.get_single() else {
-        return;
-    };
-    let Ok((camera, camera_transform)) = camera.get_single() else {
-        return;
-    };
+    let Ok(window) = windows.get_single() else { return };
+    let Ok((camera, camera_transform)) = camera.get_single() else { return };
 
     if let Some(cursor_pos) = window.cursor_position() {
         if let Some(ray) = camera.viewport_to_world(camera_transform, cursor_pos).ok() {
@@ -239,7 +262,8 @@ pub fn place_tile_preview(
                     let tile_handle = tile_assets.tiles[selected_tile.0.index()].clone();
 
                     if mouse_input.just_pressed(MouseButton::Left) && can_place {
-                        if place_tile(
+                        #[cfg(not(target_arch = "wasm32"))]
+                        let placed = place_tile(
                             &mut commands,
                             &mut tile_map,
                             &game_pause,
@@ -249,14 +273,30 @@ pub fn place_tile_preview(
                             &mut undo_redo,
                             x,
                             z,
-                        ) {
+                            &effects,
+                            &asset_server,
+                        );
+
+                        #[cfg(target_arch = "wasm32")]
+                        let placed = place_tile(
+                            &mut commands,
+                            &mut tile_map,
+                            &game_pause,
+                            &mut wfc_state,
+                            &tile_assets,
+                            &selected_tile,
+                            &mut undo_redo,
+                            x,
+                            z,
+                            &(),
+                            &asset_server,
+                        );
+                        
+                        if placed {
                             if let Some(entity) = *preview {
                                 commands.entity(entity).despawn_recursive();
                                 *preview = None;
                             }
-                            
-                            // While user doesn't change the building category, don't change the TitleType selected
-                            // selected_tile.0 = TileType::Empty;
                         }
                     } else {
                         if let Some(entity) = *preview {
@@ -292,26 +332,26 @@ pub fn place_tile(
     undo_redo: &mut UndoRedo,
     x: usize,
     z: usize,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    effects: &Res<ParticleEffects>,
+
+    #[cfg(target_arch = "wasm32")]
+    effects: &(),
+
+    asset_server: &Res<AssetServer>,
 ) -> bool {
-
-    if game_pause.paused {
-        return false;
-    }
-
-    if selected_tile.0 == TileType::Empty {
-        return false;
-    }
-
-    if x >= tile_map.width || z >= tile_map.height {
-        return false;
-    }
-
-    if !wfc_state.grid.can_place_tile(x, z, selected_tile.0) {
+    if game_pause.paused
+        || selected_tile.0 == TileType::Empty
+        || x >= tile_map.width
+        || z >= tile_map.height
+        || !wfc_state.grid.can_place_tile(x, z, selected_tile.0)
+    {
         return false;
     }
 
     if wfc_state.grid.place_tile(x, z, selected_tile.0) {
-        let entity = commands
+        let scene_entity = commands
             .spawn((
                 DestroyableEntity,
                 SceneRoot(tile_assets.tiles[selected_tile.0.index()].clone()),
@@ -323,8 +363,16 @@ pub fn place_tile(
             ))
             .id();
 
+        let pos = Vec3::new(x as f32, 0.5, z as f32);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        spawn_effect(commands, asset_server, effects, pos);
+
+        #[cfg(target_arch = "wasm32")]
+        spawn_effect(commands, asset_server, pos);
+
         tile_map.tiles[z][x].tile_type = selected_tile.0;
-        tile_map.entities[z][x] = Some(entity);
+        tile_map.entities[z][x] = Some(scene_entity);
         undo_redo.add_action(Action::PlaceTile(x, z, selected_tile.0));
         return true;
     }
