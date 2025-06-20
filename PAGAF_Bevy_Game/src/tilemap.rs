@@ -55,9 +55,11 @@ pub fn spawn_effect(
 pub fn spawn_effect(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
     position: Vec3,
 ) {
-    spawn_on_place(commands, asset_server, position);
+    spawn_on_place(commands, meshes, materials, position);
 }
 
 impl TileType {
@@ -230,6 +232,12 @@ pub fn place_tile_preview(
     effects: Res<ParticleEffects>,
 
     asset_server: Res<AssetServer>,
+
+    #[cfg(target_arch = "wasm32")]
+    mut meshes: ResMut<Assets<Mesh>>,
+
+    #[cfg(target_arch = "wasm32")]
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if game_pause.paused || egui_contexts.ctx_mut().wants_pointer_input() {
         return;
@@ -290,6 +298,8 @@ pub fn place_tile_preview(
                             z,
                             &(),
                             &asset_server,
+                            &mut meshes,
+                            &mut materials,
                         );
                         
                         if placed {
@@ -340,6 +350,12 @@ pub fn place_tile(
     effects: &(),
 
     asset_server: &Res<AssetServer>,
+
+    #[cfg(target_arch = "wasm32")]
+    meshes: &mut ResMut<Assets<Mesh>>,
+
+    #[cfg(target_arch = "wasm32")]
+    materials: &mut ResMut<Assets<StandardMaterial>>,
 ) -> bool {
     if game_pause.paused
         || selected_tile.0 == TileType::Empty
@@ -369,7 +385,7 @@ pub fn place_tile(
         spawn_effect(commands, asset_server, effects, pos);
 
         #[cfg(target_arch = "wasm32")]
-        spawn_effect(commands, asset_server, pos);
+        spawn_effect(commands, asset_server, meshes, materials, pos);
 
         tile_map.tiles[z][x].tile_type = selected_tile.0;
         tile_map.entities[z][x] = Some(scene_entity);

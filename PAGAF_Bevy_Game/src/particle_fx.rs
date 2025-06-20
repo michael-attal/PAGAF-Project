@@ -2,6 +2,9 @@ use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 use bevy_hanabi::prelude::{ParticleEffect, EffectAsset, ColorOverLifetimeModifier, SpawnerSettings};
 use bevy_hanabi::CompiledParticleEffect;
+use bevy::prelude::AlphaMode;
+use rand::Rng;
+use rand::thread_rng;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Resource)]
@@ -34,7 +37,7 @@ pub fn setup_particle_effect(
 
     let effect = EffectAsset::new(
         512, // Max capacity of particles
-        SpawnerSettings::burst(30.0.into(), 0.0.into()), // emits 30 particles once
+        SpawnerSettings::burst(100.0.into(), 0.0.into()), // emits 100 particles once
         module,
     )
         .with_name("spawn_effect")
@@ -63,44 +66,66 @@ pub fn spawn_on_place(
     ));
 }
 
+
 #[cfg(target_arch = "wasm32")]
 pub fn spawn_on_place(
     commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
     position: Vec3,
 ) {
-    use rand::random;
+    let particle_count = 150;
 
-    let texture = asset_server.load("spark.png");
-    let particle_count = 100;
+    use rand::random;
+    use rand::Rng;
+    let hues = [285.0, 320.0, 190.0, 130.0, 220.0];
+    let index = thread_rng().gen_range(0..hues.len());
+    let hue = hues[index];
+    let base_color = Color::hsl(hue, 1.0, 0.6);
+    let linear = base_color.to_linear();
+    let emissive_color = Color::linear_rgba(
+        linear.red * 0.5,
+        linear.green * 0.5,
+        linear.blue * 0.5,
+        linear.alpha,
+    );
+
+    let material = materials.add(StandardMaterial {
+        base_color,
+        perceptual_roughness: 1.0,
+        metallic: 0.5,
+        emissive: emissive_color.to_linear(),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true,
+        ..default()
+    });
+
+    let mesh = meshes.add(Cuboid::new(0.05, 0.05, 0.05));
 
     for _ in 0..particle_count {
-        // Spawn higher above the placement point
         let offset = Vec3::new(
-            (random::<f32>() - 0.5) * 1.0,
-            1.0 + random::<f32>() * 0.5, // +1.0 to lift above ground
-            (random::<f32>() - 0.5) * 1.0,
+            (random::<f32>() - 0.5),
+            0.5 + random::<f32>() * 0.5,
+            //(random::<f32>() * 0.5),
+            (random::<f32>() - 0.5),
         );
 
-        // Strong upward motion, low lateral movement
         let velocity = Vec3::new(
             (random::<f32>() - 0.5) * 0.5,
-            3.0 + random::<f32>() * 1.0, // goes up
+            1.0 + random::<f32>(),
             (random::<f32>() - 0.5) * 0.5,
         );
 
         commands.spawn((
-            Sprite {
-                image: texture.clone(),
-                ..default()
-            },
+            Mesh3d(mesh.clone()),
+            MeshMaterial3d(material.clone()),
             Transform {
-                translation: position + offset + Vec3::new(0.0, 0.0, 10.0),
-                scale: Vec3::splat(10.0), // Big for debug ftm
+                translation: position + offset,
                 ..default()
             },
+            GlobalTransform::default(),
             Velocity(velocity),
-            FadeOutTimer(Timer::from_seconds(15.0, TimerMode::Once)), // Visible longer ftm
+            FadeOutTimer(Timer::from_seconds(3.0, TimerMode::Once)),
         ));
     }
 }
@@ -127,7 +152,9 @@ pub fn fade_out_system(
 ) {
     for (entity, mut timer, mut transform) in &mut query {
         timer.0.tick(time.delta());
-        transform.scale *= 0.9; // shrink
+        let shrink_rate = 2.5; // Higher = faster shrinking
+        let factor = (1.0 - time.delta_secs()).powf(shrink_rate);
+        transform.scale *= factor;
 
         if timer.0.finished() {
             commands.entity(entity).despawn();

@@ -69,7 +69,7 @@ fn main() {
         (
             // UI Menus
             ui::main_menu.run_if(in_state(GameState::MainMenu)),
-            // ui::settings_menu.run_if(in_state(GameState::Settings)),
+            ui::settings_menu.run_if(in_state(GameState::Settings)),
             ui::load_game_menu.run_if(in_state(GameState::LoadGame)),
 
             // In-game systems

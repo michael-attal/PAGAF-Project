@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::audio::{AddAudioSource, AudioLoader, AudioPlugin, AudioSource};
+use bevy::audio::{AddAudioSource, AudioLoader, AudioPlugin, AudioSource, PlaybackMode};
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum GameState {
@@ -46,6 +46,10 @@ pub fn play_background_music(
 ) {
     commands.spawn((
         AudioPlayer::new(asset_server.load("sounds/background.ogg")),
+        PlaybackSettings {
+            mode: PlaybackMode::Loop,
+            ..default()
+        },
         BackgroundMusic,
     ));
 }
