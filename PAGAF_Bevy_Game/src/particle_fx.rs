@@ -37,7 +37,7 @@ pub fn setup_particle_effect(
 
     let effect = EffectAsset::new(
         512, // Max capacity of particles
-        SpawnerSettings::burst(100.0.into(), 0.0.into()), // emits 100 particles once
+        SpawnerSettings::burst(100.0.into(), 1000.0.into()), // emits 100 particles once
         module,
     )
         .with_name("spawn_effect")
