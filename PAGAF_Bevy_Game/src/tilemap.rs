@@ -418,10 +418,8 @@ pub fn update_placement_highlights(
     // For each grid cell
     for y in 0..wfc_state.grid.height {
         for x in 0..wfc_state.grid.width {
-            let idx = wfc_state.grid.idx(x, y);
-            let cell = &wfc_state.grid.cells[idx];
 
-            if !cell.collapsed && cell.possible[selected_tile.0.index()] {
+            if !wfc_state.grid.collapsed(x, y) {
                 let material = if wfc_state.grid.can_place_tile(x, y, selected_tile.0) {
                     highlight_materials.valid.clone()
                 } else {
