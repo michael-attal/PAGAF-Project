@@ -4,9 +4,12 @@ use bevy_ghx_proc_gen::bevy_ghx_grid::ghx_grid::cartesian::coordinates::Cartesia
 use bevy_ghx_proc_gen::bevy_ghx_grid::ghx_grid::cartesian::grid::CartesianGrid;
 use bevy_ghx_proc_gen::proc_gen::generator::builder::GeneratorBuilder;
 use bevy_ghx_proc_gen::proc_gen::generator::Generator;
-use bevy_ghx_proc_gen::proc_gen::generator::model::ModelCollection;
+use bevy_ghx_proc_gen::proc_gen::generator::model::{ModelCollection, ModelIndex};
+use bevy_ghx_proc_gen::proc_gen::generator::observer::{GenerationUpdate, QueuedObserver};
 use bevy_ghx_proc_gen::proc_gen::generator::rules::RulesBuilder;
 use bevy_ghx_proc_gen::proc_gen::generator::socket::{SocketCollection, SocketsCartesian2D};
+use bevy_ghx_proc_gen::proc_gen::ghx_grid::cartesian::coordinates::CartesianPosition;
+use bevy_ghx_proc_gen::proc_gen::ghx_grid::grid::GridIndex;
 use rand::prelude::*;
 
 /* ─────────────────────────────  Constants  ──────────────────────────────── */
@@ -46,6 +49,7 @@ impl Default for WFCState {
 pub struct WFCGrid {
     pub width: usize,
     pub height: usize,
+    pub observer : QueuedObserver,
 
     generator : Generator<Cartesian2D, CartesianGrid<Cartesian2D>>
 }
@@ -158,10 +162,13 @@ impl WFCGrid {
             .build()
             .unwrap();
 
+        let mut observer = QueuedObserver::new(&mut generator);
+
         Self {
             width,
             height,
-            generator
+            generator,
+            observer
         }
     }
 
@@ -208,6 +215,14 @@ impl WFCGrid {
         let available_models = self.generator.get_models_on(index);
 
         available_models.len() <= 1
+    }
+
+    pub fn pos_from_index(&self, grid_index: GridIndex) -> CartesianPosition {
+        self.generator.grid().pos_from_index(grid_index)
+    }
+    
+    pub fn tiletype_from_id(&self, id: ModelIndex) -> TileType {
+        ID_TO_TYPE_MAP[id]
     }
     
     pub fn collapse_all(&mut self) -> bool {
