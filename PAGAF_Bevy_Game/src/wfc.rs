@@ -4,7 +4,7 @@ use bevy_ghx_proc_gen::bevy_ghx_grid::ghx_grid::cartesian::coordinates::Cartesia
 use bevy_ghx_proc_gen::bevy_ghx_grid::ghx_grid::cartesian::grid::CartesianGrid;
 use bevy_ghx_proc_gen::proc_gen::generator::builder::GeneratorBuilder;
 use bevy_ghx_proc_gen::proc_gen::generator::Generator;
-use bevy_ghx_proc_gen::proc_gen::generator::model::{ModelCollection, ModelIndex};
+use bevy_ghx_proc_gen::proc_gen::generator::model::{ModelCollection, ModelIndex, ModelRotation};
 use bevy_ghx_proc_gen::proc_gen::generator::observer::{GenerationUpdate, QueuedObserver};
 use bevy_ghx_proc_gen::proc_gen::generator::rules::RulesBuilder;
 use bevy_ghx_proc_gen::proc_gen::generator::socket::{SocketCollection, SocketsCartesian2D};
@@ -17,19 +17,14 @@ use rand::prelude::*;
 const TILE_COUNT: usize = TileType::Park as usize + 1;
 const WEIGHTS: [f32; TILE_COUNT] = [0.0, 3.0, 2.0, 1.0, 2.5, 1.5];
 
-const ID_TO_TYPE_MAP: [TileType; 13] = [
+const ID_TO_TYPE_MAP: [TileType; 8] = [
     TileType::Road,
     TileType::Road,
     TileType::Road,
     TileType::Road,
     TileType::Residential,
     TileType::Commercial,
-    TileType::Commercial,
-    TileType::Commercial,
     TileType::Industrial,
-    TileType::Park,
-    TileType::Park,
-    TileType::Park,
     TileType::Park
 ];
 
@@ -41,7 +36,7 @@ pub struct WFCState {
 impl Default for WFCState {
     fn default() -> Self {
         Self {
-            grid: WFCGrid::new(30, 30), // Same size as TileMap // TODO: refactor it
+            grid: WFCGrid::new(50, 50), // Same size as TileMap // TODO: refactor it
         }
     }
 }
@@ -62,16 +57,17 @@ impl WFCGrid {
             sockets.create(), sockets.create(), sockets.create()
         );
 
-        let (residential, commercial, industrial, park) = (
-            sockets.create(), sockets.create(), sockets.create(), sockets.create()
+        let (residential, commercial, industrial, park, urban) = (
+            sockets.create(), sockets.create(), sockets.create(), sockets.create(), sockets.create()
         );
 
         sockets.add_connection(road, [road, road_intersection]);
-        sockets.add_connection(road_side, [residential, commercial, industrial, park]);
+        sockets.add_connection(road_side, [residential, industrial, park]);
         sockets.add_connection(residential, [residential]);
         sockets.add_connection(commercial, [commercial]);
         sockets.add_connection(industrial, [industrial]);
-        sockets.add_connection(park, [park]);
+        sockets.add_connection(park, [park, residential]);
+        sockets.add_connection(urban, [road_side, residential, park]);
 
         let mut models = ModelCollection::<Cartesian2D>::new();
 
@@ -81,7 +77,7 @@ impl WFCGrid {
             x_neg: road,
             y_pos: road_side,
             y_neg: road_side,
-        }).with_all_rotations();
+        }).with_additional_rotation(ModelRotation::Rot90);
         models.create(SocketsCartesian2D::Simple {
             x_pos: road_side,
             x_neg: road,
@@ -98,70 +94,36 @@ impl WFCGrid {
 
         // Building Models
         // Residentials are more or less universal
-        models.create(SocketsCartesian2D::Mono(residential)).with_weight(2.0);
+        models.create(SocketsCartesian2D::Mono(residential)).with_weight(3.0);
 
-        // Commercials need at least two residential tiles
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            x_neg: residential,
-            y_pos: commercial,
-            y_neg: commercial,
-        }).with_all_rotations().with_weight(0.33);
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            y_pos: commercial,
-            x_neg: residential,
-            y_neg: commercial,
-        }).with_all_rotations().with_weight(0.33);
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            x_neg: residential,
-            y_pos: residential,
-            y_neg: commercial,
-        }).with_all_rotations().with_weight(0.33);
+        // Commercials must be at the end of a road and make gigantic complexes
+        models.create(SocketsCartesian2D::Multiple {
+            x_pos: Vec::from([commercial, urban]),
+            x_neg: Vec::from([commercial, urban]),
+            y_pos: Vec::from([commercial, road]),
+            y_neg: Vec::from([commercial, urban]),
+        }).with_additional_rotation(ModelRotation::Rot90).with_weight(0.2);
 
         // Industrials should be kept in their own sections
         models.create(SocketsCartesian2D::Mono(industrial)).with_weight(1.0);
 
         // Parks need at least a single residential tile
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            x_neg: park,
-            y_pos: park,
-            y_neg: park,
-        }).with_all_rotations().with_weight(0.25);
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            x_neg: residential,
-            y_pos: park,
-            y_neg: park,
-        }).with_all_rotations().with_weight(0.25);
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            y_pos: park,
-            x_neg: residential,
-            y_neg: park,
-        }).with_all_rotations().with_weight(0.25);
-        models.create(SocketsCartesian2D::Simple {
-            x_pos: residential,
-            x_neg: residential,
-            y_pos: residential,
-            y_neg: park,
-        }).with_all_rotations().with_weight(0.25);
+        models.create(SocketsCartesian2D::Mono(park)).with_weight(1.0);
 
         // We give the models and socket collection to a RulesBuilder and get our Rules
         let rules = RulesBuilder::new_cartesian_2d(models, sockets).build().unwrap();
 
-        // Like a chessboard, let's do an 8x8 2d grid
-        let grid = CartesianGrid::new_cartesian_2d(35, 35, false, false);
+        // This is the base grid on which the city is built
+        let grid = CartesianGrid::new_cartesian_2d(width as u32, height as u32, false, false);
 
-        // There many more parameters you can tweak on a Generator before building it, explore the API.
         let mut generator = GeneratorBuilder::new()
             .with_rules(rules)
             .with_grid(grid)
             .build()
             .unwrap();
 
+        // The observer is how the rest of the application will learn of WFC's actions
+        // It registers changes on which we can act later on. For a concrete example, see tilemap.rs
         let mut observer = QueuedObserver::new(&mut generator);
 
         Self {

@@ -10,7 +10,7 @@ rand = { version = "0.9.1", features = ["std_rng", "std"] }
 wasm-bindgen = "0.2"
 bevy_ghx_proc_gen = "0.6.0"
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
 objc2 = { version = "0.6.1", features = ["relax-sign-encoding"] }
 
 # [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
