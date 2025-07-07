@@ -114,7 +114,7 @@ impl TileType {
         match self {
             TileType::Residential => Vec3::splat(0.1),
             TileType::Commercial => Vec3::splat(0.05),
-            TileType::Industrial => Vec3::splat(0.2),
+            TileType::Industrial => Vec3::splat(0.1),
             TileType::Road => Vec3::splat(0.25),
             TileType::Park => Vec3::splat(0.14),
             TileType::Empty => Vec3::ONE,
@@ -379,7 +379,16 @@ pub fn place_tile(
     }
 
     if wfc_state.grid.place_tile(x, z, selected_tile.0) {
-        return update_map(commands, tile_map, wfc_state, tile_assets, undo_redo, meshes, materials, asset_server)
+        return update_map(
+            commands,
+            tile_map,
+            wfc_state,
+            tile_assets,
+            undo_redo,
+            meshes,
+            materials,
+            asset_server
+        )
     }
     
     false
