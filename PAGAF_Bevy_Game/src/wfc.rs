@@ -152,16 +152,18 @@ impl WFCGrid {
         // We give the models and socket collection to a RulesBuilder and get our Rules
         let rules = RulesBuilder::new_cartesian_2d(models, sockets).build().unwrap();
 
-        // Like a chessboard, let's do an 8x8 2d grid
-        let grid = CartesianGrid::new_cartesian_2d(35, 35, false, false);
+        // This is the base grid on which the city is built
+        let grid = CartesianGrid::new_cartesian_2d(width as u32, height as u32, false, false);
 
-        // There many more parameters you can tweak on a Generator before building it, explore the API.
         let mut generator = GeneratorBuilder::new()
             .with_rules(rules)
             .with_grid(grid)
+            .with_max_retry_count(1000000000)
             .build()
             .unwrap();
 
+        // The observer is how the rest of the application will learn of WFC's actions
+        // It registers changes on which we can act later on. For a concrete example, see tilemap.rs
         let mut observer = QueuedObserver::new(&mut generator);
 
         Self {

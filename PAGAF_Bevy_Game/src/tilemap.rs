@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use std::fmt::Debug;
 use crate::tile_loader::TileAssets;
 use crate::undo_redo::{Action, UndoRedo};
@@ -378,66 +379,76 @@ pub fn place_tile(
     }
 
     if wfc_state.grid.place_tile(x, z, selected_tile.0) {
-
-        let updates = wfc_state.grid.observer.dequeue_all();
-        for i in 0..updates.len()
-        {
-            let update = updates[i];
-
-            match update {
-                GenerationUpdate::Generated(node) => {
-                    println!("Placing tile from WFC!");
-                    let coords = wfc_state.grid.pos_from_index(node.node_index);
-                    let tile_type = wfc_state.grid.tiletype_from_id(node.model_instance.model_index);
-                    let rotation = match node.model_instance.rotation { 
-                        ModelRotation::Rot0 => 0.0,
-                        ModelRotation::Rot90 => 90.0,
-                        ModelRotation::Rot180 => 180.0,
-                        ModelRotation::Rot270 => 270.0
-                    };
-
-                    let scene_entity = commands
-                        .spawn((
-                            DestroyableEntity,
-                            SceneRoot(tile_assets.tiles[tile_type.index()].clone()),
-                            Transform {
-                                translation: Vec3::new(coords.x as f32, 0.0, coords.y as f32),
-                                scale: tile_type.scale(),
-                                rotation: Quat::from_rotation_y(rotation),
-                                ..default()
-                            },
-                        ))
-                        .id();
-
-                    let pos = Vec3::new(x as f32, 0.5, z as f32);
-
-                    // #[cfg(not(target_arch = "wasm32"))]
-                    // spawn_effect(commands, asset_server, effects, pos);
-
-                    // #[cfg(target_arch = "wasm32")]
-                    spawn_effect(commands, asset_server, meshes, materials, pos);
-
-                    tile_map.tiles[z][x].tile_type = tile_type;
-                    tile_map.entities[z][x] = Some(scene_entity);
-                    undo_redo.add_action(Action::PlaceTile(x, z, tile_type));
-                }
-
-                GenerationUpdate::Failed(fail) => {
-                    println!("On s'est chié dessus! {}", fail);
-                    return false
-                }
-
-                GenerationUpdate::Reinitializing(seed) => {
-                    println!("All is null");
-                    return false
-                }
-            }
-        }
-        
-        return true
+        return update_map(commands, tile_map, wfc_state, tile_assets, undo_redo, effects, asset_server)
     }
     
     false
+}
+
+pub fn update_map(
+    commands: &mut Commands,
+    tile_map: &mut TileMap,
+    wfc_state: &mut WFCState,
+    tile_assets: &TileAssets,
+    undo_redo: &mut UndoRedo,
+    effects: &Res<ParticleEffects>,
+    asset_server: &Res<AssetServer>) -> bool
+{
+    let updates = wfc_state.grid.observer.dequeue_all();
+    for i in 0..updates.len()
+    {
+        let update = updates[i];
+
+        match update {
+            GenerationUpdate::Generated(node) => {
+                let coords = wfc_state.grid.pos_from_index(node.node_index);
+                let tile_type = wfc_state.grid.tiletype_from_id(node.model_instance.model_index);
+                let rotation = match node.model_instance.rotation {
+                    ModelRotation::Rot0 => 0.0,
+                    ModelRotation::Rot90 => 90.0 * PI / 180.0,
+                    ModelRotation::Rot180 => 180.0 * PI / 180.0,
+                    ModelRotation::Rot270 => 270.0 * PI / 180.0
+                };
+
+                let scene_entity = commands
+                    .spawn((
+                        DestroyableEntity,
+                        SceneRoot(tile_assets.tiles[tile_type.index()].clone()),
+                        Transform {
+                            translation: Vec3::new(coords.x as f32, 0.0, coords.y as f32),
+                            scale: tile_type.scale(),
+                            rotation: Quat::from_rotation_y(rotation),
+                            ..default()
+                        },
+                    ))
+                    .id();
+
+                let pos = Vec3::new(coords.x as f32, 0.5, coords.y as f32);
+
+                #[cfg(not(target_arch = "wasm32"))]
+                spawn_effect(commands, asset_server, effects, pos);
+
+                #[cfg(target_arch = "wasm32")]
+                spawn_effect(commands, asset_server, meshes, materials, pos);
+
+                tile_map.tiles[coords.y as usize][coords.x as usize].tile_type = tile_type;
+                tile_map.entities[coords.y as usize][coords.x as usize] = Some(scene_entity);
+                undo_redo.add_action(Action::PlaceTile(coords.x as usize, coords.y as usize, tile_type));
+            }
+
+            GenerationUpdate::Failed(fail) => {
+                println!("On s'est chié dessus! {}", fail);
+                return false
+            }
+
+            GenerationUpdate::Reinitializing(seed) => {
+                println!("All is null");
+                return false
+            }
+        }
+    }
+
+    true
 }
 
 pub fn update_placement_highlights(
