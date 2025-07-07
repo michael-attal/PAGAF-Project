@@ -8,6 +8,7 @@ bevy = { version = "0.16.1", features=["jpeg"] }
 bevy_egui = "0.34.1"
 rand = { version = "0.9.1", features = ["std_rng", "std"] }
 wasm-bindgen = "0.2"
+bevy_ghx_proc_gen = "0.6.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 bevy_hanabi = { version = "0.16", features = ["3d", "serde"] }
