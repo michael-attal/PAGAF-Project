@@ -91,6 +91,14 @@ container run \
   bevy-arm64:latest
 ```
 
+## Si déjà installé
+
+```bash
+container system start
+container stary bevy-dev
+container exec --tty --interactive bevy-dev sh
+```
+
 ## Compilation du projet Bevy pour le WebAssembly
 
 ```bash
