@@ -10,7 +10,7 @@ mod particle_fx;
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
-use bevy_hanabi::prelude::*;
+// use bevy_hanabi::prelude::*;
 
 use crate::undo_redo::UndoRedo;
 use app_config::{GameSettings, GameState};
@@ -20,10 +20,10 @@ use tile_loader::load_tiles;
 use tilemap::{SelectedTile, TileType, setup_grid};
 use wfc::WFCState;
 
-#[cfg(not(target_arch = "wasm32"))]
-use crate::particle_fx::{setup_particle_effect, ParticleEffects};
+// #[cfg(not(target_arch = "wasm32"))]
+// use crate::particle_fx::{setup_particle_effect, ParticleEffects};
 
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 use crate::particle_fx::{fade_out_system, velocity_system};
 
 use crate::particle_fx::spawn_on_place;
@@ -40,8 +40,8 @@ fn main() {
     });
 
     // Only enable Hanabi on native platforms
-    #[cfg(not(target_arch = "wasm32"))]
-    app.add_plugins(HanabiPlugin);
+    // #[cfg(not(target_arch = "wasm32"))]
+    // app.add_plugins(HanabiPlugin);
 
     app.insert_resource(GameSettings::default());
     app.insert_resource(GamePause::default());
@@ -54,8 +54,8 @@ fn main() {
 
     app.add_systems(Startup, (load_tiles, setup_grid));
 
-    #[cfg(not(target_arch = "wasm32"))]
-    app.add_systems(Startup, setup_particle_effect);
+    // #[cfg(not(target_arch = "wasm32"))]
+    // app.add_systems(Startup, setup_particle_effect);
 
     app.add_systems(
         PostStartup,
@@ -84,9 +84,9 @@ fn main() {
 
             ui::update_volume,
 
-            #[cfg(target_arch = "wasm32")]
+            // #[cfg(target_arch = "wasm32")]
             fade_out_system, // Web-only system for sprite fallback
-            #[cfg(target_arch = "wasm32")]
+            // #[cfg(target_arch = "wasm32")]
             velocity_system,
         ),
     );

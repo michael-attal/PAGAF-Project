@@ -6,14 +6,17 @@ use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use crate::app_config::DestroyableEntity;
 use crate::game::GamePause;
-use bevy_hanabi::prelude::*;
+// use bevy_hanabi::prelude::*;
 use bevy::prelude::AlphaMode;
 use bevy_ghx_proc_gen::proc_gen::generator::model::ModelRotation;
 use bevy_ghx_proc_gen::proc_gen::generator::observer::GenerationUpdate;
-#[cfg(not(target_arch = "wasm32"))]
-use crate::particle_fx::{ParticleEffects, spawn_on_place};
 
-#[cfg(target_arch = "wasm32")]
+
+// #[cfg(not(target_arch = "wasm32"))]
+// use crate::particle_fx::{ParticleEffects, spawn_on_place};
+
+
+//#[cfg(target_arch = "wasm32")]
 use crate::particle_fx::spawn_on_place;
 
 #[derive(Component)]
@@ -43,6 +46,7 @@ pub enum TileType {
     Park = 5,
 }
 
+/*
 #[cfg(not(target_arch = "wasm32"))]
 pub fn spawn_effect(
     commands: &mut Commands,
@@ -52,8 +56,10 @@ pub fn spawn_effect(
 ) {
     spawn_on_place(commands, asset_server, effects.spawn_handle.clone(), position);
 }
+*/
 
-#[cfg(target_arch = "wasm32")]
+
+//#[cfg(target_arch = "wasm32")]
 pub fn spawn_effect(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
@@ -230,15 +236,15 @@ pub fn place_tile_preview(
     mut preview: Local<Option<Entity>>,
     mut egui_contexts: EguiContexts,
 
-    #[cfg(not(target_arch = "wasm32"))]
-    effects: Res<ParticleEffects>,
+    // #[cfg(not(target_arch = "wasm32"))]
+    // effects: Res<ParticleEffects>,
 
     asset_server: Res<AssetServer>,
 
-    #[cfg(target_arch = "wasm32")]
+    // #[cfg(target_arch = "wasm32")]
     mut meshes: ResMut<Assets<Mesh>>,
 
-    #[cfg(target_arch = "wasm32")]
+    // #[cfg(target_arch = "wasm32")]
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if game_pause.paused || egui_contexts.ctx_mut().wants_pointer_input() {
@@ -272,6 +278,8 @@ pub fn place_tile_preview(
                     let tile_handle = tile_assets.tiles[selected_tile.0.index()].clone();
 
                     if mouse_input.just_pressed(MouseButton::Left) && can_place {
+
+                        /*
                         #[cfg(not(target_arch = "wasm32"))]
                         let placed = place_tile(
                             &mut commands,
@@ -286,8 +294,9 @@ pub fn place_tile_preview(
                             &effects,
                             &asset_server,
                         );
+                        */
 
-                        #[cfg(target_arch = "wasm32")]
+                        // #[cfg(target_arch = "wasm32")]
                         let placed = place_tile(
                             &mut commands,
                             &mut tile_map,
@@ -345,18 +354,18 @@ pub fn place_tile(
     x: usize,
     z: usize,
 
-    #[cfg(not(target_arch = "wasm32"))]
-    effects: &Res<ParticleEffects>,
+    // #[cfg(not(target_arch = "wasm32"))]
+    // effects: &Res<ParticleEffects>,
 
-    #[cfg(target_arch = "wasm32")]
+    // #[cfg(target_arch = "wasm32")]
     effects: &(),
 
     asset_server: &Res<AssetServer>,
 
-    #[cfg(target_arch = "wasm32")]
+    // #[cfg(target_arch = "wasm32")]
     meshes: &mut ResMut<Assets<Mesh>>,
 
-    #[cfg(target_arch = "wasm32")]
+    // #[cfg(target_arch = "wasm32")]
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) -> bool {
     if game_pause.paused
@@ -402,10 +411,10 @@ pub fn place_tile(
 
                     let pos = Vec3::new(x as f32, 0.5, z as f32);
 
-                    #[cfg(not(target_arch = "wasm32"))]
-                    spawn_effect(commands, asset_server, effects, pos);
+                    // #[cfg(not(target_arch = "wasm32"))]
+                    // spawn_effect(commands, asset_server, effects, pos);
 
-                    #[cfg(target_arch = "wasm32")]
+                    // #[cfg(target_arch = "wasm32")]
                     spawn_effect(commands, asset_server, meshes, materials, pos);
 
                     tile_map.tiles[z][x].tile_type = tile_type;

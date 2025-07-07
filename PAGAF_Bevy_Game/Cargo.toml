@@ -11,7 +11,10 @@ wasm-bindgen = "0.2"
 bevy_ghx_proc_gen = "0.6.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy_hanabi = { version = "0.16", features = ["3d", "serde"] }
+objc2 = { version = "0.6.1", features = ["relax-sign-encoding"] }
+
+# [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# bevy_hanabi = { version = "0.16", features = ["3d", "serde"] }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

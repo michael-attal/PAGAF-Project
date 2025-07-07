@@ -1,11 +1,12 @@
 use bevy::prelude::*;
-use bevy_hanabi::prelude::*;
-use bevy_hanabi::prelude::{ParticleEffect, EffectAsset, ColorOverLifetimeModifier, SpawnerSettings};
-use bevy_hanabi::CompiledParticleEffect;
+// use bevy_hanabi::prelude::*;
+// use bevy_hanabi::prelude::{ParticleEffect, EffectAsset, ColorOverLifetimeModifier, SpawnerSettings};
+// use bevy_hanabi::CompiledParticleEffect;
 use bevy::prelude::AlphaMode;
 use rand::Rng;
 use rand::thread_rng;
 
+/*
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Resource)]
 pub struct ParticleEffects {
@@ -25,7 +26,7 @@ pub fn setup_particle_effect(
     // Radius spherical volume position = 0.5
     let init_pos = SetPositionSphereModifier {
         center: module.lit(Vec3::ZERO),
-        radius: module.lit(0.5),
+        radius: module.lit(0.1),
         dimension: ShapeDimension::Volume,
     };
     let init_vel = SetVelocitySphereModifier {
@@ -36,8 +37,8 @@ pub fn setup_particle_effect(
     let update_accel = AccelModifier::new(module.lit(Vec3::Y * 1.5));
 
     let effect = EffectAsset::new(
-        512, // Max capacity of particles
-        SpawnerSettings::burst(100.0.into(), 1000.0.into()), // emits 100 particles once
+        256, // Max capacity of particles
+        SpawnerSettings::burst(100.0.into(), 10000.0.into()), // emits 100 particles once
         module,
     )
         .with_name("spawn_effect")
@@ -65,9 +66,9 @@ pub fn spawn_on_place(
         GlobalTransform::default(),
     ));
 }
+*/
 
-
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 pub fn spawn_on_place(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
