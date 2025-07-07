@@ -379,7 +379,7 @@ pub fn place_tile(
     }
 
     if wfc_state.grid.place_tile(x, z, selected_tile.0) {
-        return update_map(commands, tile_map, wfc_state, tile_assets, undo_redo, effects, asset_server)
+        return update_map(commands, tile_map, wfc_state, tile_assets, undo_redo, meshes, materials, asset_server)
     }
     
     false
@@ -391,7 +391,8 @@ pub fn update_map(
     wfc_state: &mut WFCState,
     tile_assets: &TileAssets,
     undo_redo: &mut UndoRedo,
-    effects: &Res<ParticleEffects>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
     asset_server: &Res<AssetServer>) -> bool
 {
     let updates = wfc_state.grid.observer.dequeue_all();
@@ -425,10 +426,10 @@ pub fn update_map(
 
                 let pos = Vec3::new(coords.x as f32, 0.5, coords.y as f32);
 
-                #[cfg(not(target_arch = "wasm32"))]
-                spawn_effect(commands, asset_server, effects, pos);
+                // #[cfg(not(target_arch = "wasm32"))]
+                // spawn_effect(commands, asset_server, effects, pos);
 
-                #[cfg(target_arch = "wasm32")]
+                // #[cfg(target_arch = "wasm32")]
                 spawn_effect(commands, asset_server, meshes, materials, pos);
 
                 tile_map.tiles[coords.y as usize][coords.x as usize].tile_type = tile_type;
