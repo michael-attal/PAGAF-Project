@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::audio::{AddAudioSource, AudioLoader, AudioPlugin, AudioSource};
+use bevy::audio::{AddAudioSource, AudioLoader, AudioPlugin, AudioSource, PlaybackMode};
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum GameState {
@@ -37,12 +37,19 @@ impl Default for GameSettings {
 #[derive(Component)]
 pub struct BackgroundMusic;
 
+#[derive(Component)]
+pub struct DestroyableEntity;
+
 pub fn play_background_music(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn((
         AudioPlayer::new(asset_server.load("sounds/background.ogg")),
+        PlaybackSettings {
+            mode: PlaybackMode::Loop,
+            ..default()
+        },
         BackgroundMusic,
     ));
 }

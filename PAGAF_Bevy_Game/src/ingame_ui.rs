@@ -1,10 +1,12 @@
-use crate::app_config::GameState;
+use crate::app_config::{GameSettings, GameState};
 use crate::game::GamePause;
 use crate::tile_loader::TileAssets;
-use crate::tilemap::{SelectedTile, TileMap, TileType};
+use crate::tilemap::{update_map, SelectedTile, TileMap, TileMapSettings, TileType};
 use crate::undo_redo::UndoRedo;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
+use bevy_egui::egui::Id;
+use crate::wfc::WFCState;
 
 #[derive(Resource)]
 pub struct AvailableTiles {
@@ -50,9 +52,9 @@ pub fn game_menu(
             {
                 pause.paused = !pause.paused;
             }
-            if ui.button("Settings").clicked() {
-                next_state.set(GameState::Settings);
-            }
+            // if ui.button("Settings").clicked() {
+            //     next_state.set(GameState::Settings);
+            // }
             if ui.button("Main menu").clicked() {
                 next_state.set(GameState::MainMenu);
             }
@@ -62,14 +64,30 @@ pub fn game_menu(
         });
 }
 
+pub fn in_game_settings(mut context: EguiContexts, mut next_state: ResMut<NextState<GameState>>, mut settings: ResMut<GameSettings>){
+    egui::Window::new("Settings")
+        .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-130.0, 10.0))
+        .show(context.ctx_mut() , |ui |{
+            ui.label("Volume:");
+            ui.add(egui::Slider::new(&mut settings.volume, 0.0..=1.0));
+        });
+}
+
 pub fn tile_panel(
     mut contexts: EguiContexts,
     tiles: Res<AvailableTiles>,
     mut selected_tile: ResMut<SelectedTile>,
     mut undo_redo: ResMut<UndoRedo>,
     mut tilemap: ResMut<TileMap>,
+    game_pause: Res<GamePause>,
     mut commands: Commands,
     tile_assets: Res<TileAssets>,
+    mut wfc_state: ResMut<WFCState>,
+
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut tile_map_settings: ResMut<TileMapSettings>,
 ) {
     egui::Window::new("Building Panel")
         .anchor(egui::Align2::CENTER_BOTTOM, egui::vec2(0.0, -10.0))
@@ -80,7 +98,7 @@ pub fn tile_panel(
                     let selected = *tile == selected_tile.0;
                     if ui
                         .selectable_label(selected, format!("{}\n{:?}", tile_icon(tile), tile))
-                        .clicked()
+                        .clicked() && !game_pause.paused
                     {
                         // Toggle selection
                         if selected_tile.0 == *tile {
@@ -102,7 +120,24 @@ pub fn tile_panel(
                         undo_redo.undo(&mut tilemap, &mut commands);
                     }
                     if ui.button("↪️Redo").clicked() {
-                        undo_redo.redo(&mut tilemap, &mut commands, &tile_assets);
+                        undo_redo.redo(&mut tilemap, &mut commands, &tile_assets, &tile_map_settings);
+                    }
+                    if ui.button("Generate All!").clicked() {
+                        if wfc_state.grid.collapse_all()
+                        {
+                            println!("Reussite!");
+                            update_map(
+                                &mut commands,
+                                &mut tilemap,
+                                &mut wfc_state,
+                                &tile_assets,
+                                &mut undo_redo,
+                                &mut meshes,
+                                &mut materials,
+                                &asset_server,
+                                &mut tile_map_settings,
+                            );
+                        }
                     }
                 });
             });

@@ -4,11 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.16.0", features=["jpeg"] }
+bevy = { version = "0.16.1", features=["jpeg"] }
 bevy_egui = "0.34.1"
-bevy_mod_picking = "0.20.1"
 rand = { version = "0.9.1", features = ["std_rng", "std"] }
 wasm-bindgen = "0.2"
+bevy_ghx_proc_gen = "0.6.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6.1", features = ["relax-sign-encoding"] }
+
+# [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# bevy_hanabi = { version = "0.16", features = ["3d", "serde"] }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
@@ -18,6 +24,24 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
-# Patch nécessaire pour la compilation en wasm sinon rand non dispo
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+[target.'cfg(all(target_family = "wasm", any(target_os = "unknown", target_os = "none")))'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
+bevy_hanabi = { version = "0.16", default-features = false, features = ["3d"] }
+
+# Enable more optimization in the release profile at the cost of compile time.
+[profile.release]
+# Compile the entire crate as one unit.
+# Slows compile times, marginal improvements.
+codegen-units = 1
+# Do a second optimization pass over the entire program, including dependencies.
+# Slows compile times, marginal improvements.
+lto = "thin"
+# Optimize for size in the wasm-release profile to reduce load times and bandwidth usage on web.
+[profile.wasm-release]
+# Default to release profile values.
+inherits = "release"
+# Optimize with size in mind (also try "z", sometimes it is better).
+# Slightly slows compile times, great improvements to file size and runtime performance.
+opt-level = "s"
+# Strip all debugging information from the binary to slightly reduce file size.
+strip = "debuginfo"
