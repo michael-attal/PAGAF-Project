@@ -14,14 +14,11 @@ use rand::prelude::*;
 
 /* ─────────────────────────────  Constants  ──────────────────────────────── */
 
-const TILE_COUNT: usize = TileType::Park as usize + 1;
-const WEIGHTS: [f32; TILE_COUNT] = [0.0, 3.0, 2.0, 1.0, 2.5, 1.5];
-
 const ID_TO_TYPE_MAP: [TileType; 8] = [
     TileType::Road,
-    TileType::Road,
-    TileType::Road,
-    TileType::Road,
+    TileType::RoadL,
+    TileType::RoadT,
+    TileType::RoadX,
     TileType::Residential,
     TileType::Commercial,
     TileType::Industrial,
@@ -36,7 +33,7 @@ pub struct WFCState {
 impl Default for WFCState {
     fn default() -> Self {
         Self {
-            grid: WFCGrid::new(50, 50), // Same size as TileMap // TODO: refactor it
+            grid: WFCGrid::new(20, 20), // Same size as TileMap // TODO: refactor it
         }
     }
 }
@@ -79,10 +76,10 @@ impl WFCGrid {
             y_neg: road_side,
         }).with_additional_rotation(ModelRotation::Rot90);
         models.create(SocketsCartesian2D::Simple {
-            x_pos: road_side,
-            x_neg: road,
-            y_pos: road,
-            y_neg: road_side,
+            x_pos: road_intersection,
+            x_neg: road_side,
+            y_pos: road_side,
+            y_neg: road_intersection,
         }).with_all_rotations().with_weight(0.1);
         models.create(SocketsCartesian2D::Simple {
             x_pos: road_intersection,

@@ -44,7 +44,10 @@ pub enum TileType {
     Commercial = 2,
     Industrial = 3,
     Road = 4,
-    Park = 5,
+    RoadL = 5,
+    RoadT = 6,
+    RoadX = 7,
+    Park = 8
 }
 
 /*
@@ -72,12 +75,15 @@ pub fn spawn_effect(
 }
 
 impl TileType {
-    pub const ALL: [TileType; 5] = [
+    pub const ALL: [TileType; 8] = [
         TileType::Residential,
         TileType::Commercial,
         TileType::Industrial,
         TileType::Road,
-        TileType::Park,
+        TileType::RoadL,
+        TileType::RoadT,
+        TileType::RoadX,
+        TileType::Park
     ];
 
     /// Index used in vectors and for file names.
@@ -89,11 +95,14 @@ impl TileType {
     pub fn scene_path(self) -> Option<String> {
         match self {
             TileType::Empty => None,
-            _ => Some(format!(
-                //"models/tiles/tile_{}/tile.glb#Scene0", // FIXME: À corriger selon le type de batiment (Residential Commercial Industrial Road Park)
-                "models/tiles/residential/residential_{}.glb#Scene0",
-                self.index()
-            )),
+            TileType::Road => Some("models/newBuilds/roads/2WayRoad.glb#Scene0".parse().unwrap()),
+            TileType::RoadL => Some("models/newBuilds/roads/LTurnRoad.glb#Scene0".parse().unwrap()),
+            TileType::RoadT => Some("models/newBuilds/roads/TCrossRoad.glb#Scene0".parse().unwrap()),
+            TileType::RoadX => Some("models/newBuilds/roads/XCrossRoad.glb#Scene0".parse().unwrap()),
+            TileType::Residential => Some("models/newBuilds/house/house_1.glb#Scene0".parse().unwrap()),
+            TileType::Commercial => Some("models/newBuilds/store/store_1.glb#Scene0".parse().unwrap()),
+            TileType::Industrial => Some("models/newBuilds/factory/factory_1.glb#Scene0".parse().unwrap()),
+            TileType::Park => Some("models/newBuilds/parc/parcFloorTree.glb#Scene0".parse().unwrap())
         }
     }
 
@@ -112,11 +121,14 @@ impl TileType {
     // To scale cases and models
     pub fn scale(self) -> Vec3 {
         match self {
-            TileType::Residential => Vec3::splat(0.1),
-            TileType::Commercial => Vec3::splat(0.05),
-            TileType::Industrial => Vec3::splat(0.1),
-            TileType::Road => Vec3::splat(0.25),
-            TileType::Park => Vec3::splat(0.14),
+            TileType::Residential => Vec3::splat(0.5),
+            TileType::Commercial => Vec3::splat(0.5),
+            TileType::Industrial => Vec3::splat(1.0),
+            TileType::Road => Vec3::splat(0.5),
+            TileType::RoadL => Vec3::splat(0.5),
+            TileType::RoadT => Vec3::splat(0.5),
+            TileType::RoadX => Vec3::splat(0.5),
+            TileType::Park => Vec3::splat(1.0),
             TileType::Empty => Vec3::ONE,
         }
     }
@@ -415,9 +427,9 @@ pub fn update_map(
                 let tile_type = wfc_state.grid.tiletype_from_id(node.model_instance.model_index);
                 let rotation = match node.model_instance.rotation {
                     ModelRotation::Rot0 => 0.0,
-                    ModelRotation::Rot90 => 90.0 * PI / 180.0,
+                    ModelRotation::Rot90 => -90.0 * PI / 180.0,
                     ModelRotation::Rot180 => 180.0 * PI / 180.0,
-                    ModelRotation::Rot270 => 270.0 * PI / 180.0
+                    ModelRotation::Rot270 => -270.0 * PI / 180.0
                 };
 
                 let scene_entity = commands
@@ -425,7 +437,7 @@ pub fn update_map(
                         DestroyableEntity,
                         SceneRoot(tile_assets.tiles[tile_type.index()].clone()),
                         Transform {
-                            translation: Vec3::new(coords.x as f32, 0.0, coords.y as f32),
+                            translation: Vec3::new(coords.x as f32, 0.01, coords.y as f32),
                             scale: tile_type.scale(),
                             rotation: Quat::from_rotation_y(rotation),
                             ..default()
