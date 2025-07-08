@@ -8,6 +8,7 @@ mod undo_redo;
 mod wfc;
 mod particle_fx;
 mod skybox;
+mod patch;
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
@@ -81,6 +82,7 @@ fn main() {
     app.add_systems(
         Update,
         (
+            patch::patch_material_alpha_mode,
             skybox::load_skybox,
 
             // UI Menus
