@@ -14,6 +14,17 @@ use rand::prelude::*;
 
 /* ─────────────────────────────  Constants  ──────────────────────────────── */
 
+const SELECTION_ID_TO_TYPE_MAP: [TileType; 8] = [
+    TileType::Road,
+    TileType::Road,
+    TileType::Road,
+    TileType::Road,
+    TileType::Residential,
+    TileType::Commercial,
+    TileType::Industrial,
+    TileType::Park
+];
+
 const ID_TO_TYPE_MAP: [TileType; 8] = [
     TileType::Road,
     TileType::RoadL,
@@ -140,7 +151,7 @@ impl WFCGrid {
 
         for i in 0..available_models.len()
         {
-            if ID_TO_TYPE_MAP[available_models[i].model_index] == tile_type {
+            if SELECTION_ID_TO_TYPE_MAP[available_models[i].model_index] == tile_type {
                 self.generator.set_and_propagate(index, available_models[i], false);
                 return true
             }
@@ -158,7 +169,7 @@ impl WFCGrid {
 
         for i in 0..available_models.len()
         {
-            if ID_TO_TYPE_MAP[available_models[i].model_index] == tile_type {
+            if SELECTION_ID_TO_TYPE_MAP[available_models[i].model_index] == tile_type {
                 return true;
             }
         }
