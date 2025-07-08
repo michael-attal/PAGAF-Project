@@ -49,7 +49,10 @@ fn main() {
     app.insert_resource(SelectedTile(TileType::Empty));
     app.insert_resource(UndoRedo::default());
     app.insert_resource(WFCState::default());
-
+    app.insert_resource(game::CameraZoomSettings {
+        zoom_range: 5.0..50.0,
+        zoom_speed: 1.5,
+    });
     app.init_state::<GameState>();
 
     app.add_systems(Startup, (load_tiles, setup_grid));
@@ -74,6 +77,7 @@ fn main() {
 
             // In-game systems
             game::camera_movement.run_if(in_state(GameState::InGame)),
+            game::camera_zoom_system.run_if(in_state(GameState::InGame)),
             ingame_ui::game_menu.run_if(in_state(GameState::InGame)),
             ingame_ui::tile_panel.run_if(in_state(GameState::InGame)),
             ingame_ui::in_game_settings.run_if(in_state(GameState::InGame)),
