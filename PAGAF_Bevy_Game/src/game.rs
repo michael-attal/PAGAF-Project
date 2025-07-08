@@ -24,12 +24,14 @@ pub fn setup_game(mut commands: Commands, entity_query: Query<Entity, With<Destr
         commands.entity(e).despawn();
     }
 
-    // Camera setup
+    // Camera setup - Now in skybox
+    /*
     commands.spawn((
         DestroyableEntity,
         Camera3d::default(),
         Transform::from_xyz(10.0, 15.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
+    */
 
     // Lighting setup
     commands.spawn((

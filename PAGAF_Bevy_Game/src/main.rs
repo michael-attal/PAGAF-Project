@@ -7,6 +7,7 @@ mod ui;
 mod undo_redo;
 mod wfc;
 mod particle_fx;
+mod skybox;
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
@@ -55,7 +56,11 @@ fn main() {
     });
     app.init_state::<GameState>();
 
-    app.add_systems(Startup, (load_tiles, setup_grid));
+    app.add_systems(Startup, (
+        load_tiles,
+        setup_grid,
+        skybox::setup_camera,
+    ));
 
     // #[cfg(not(target_arch = "wasm32"))]
     // app.add_systems(Startup, setup_particle_effect);
@@ -65,11 +70,15 @@ fn main() {
         (/*wfc::generate_level,*/ app_config::play_background_music),
     );
 
-    app.add_systems(OnEnter(GameState::InGame), game::setup_game);
+    app.add_systems(OnEnter(GameState::InGame), (
+        game::setup_game,
+    ));
 
     app.add_systems(
         Update,
         (
+            skybox::load_skybox,
+
             // UI Menus
             ui::main_menu.run_if(in_state(GameState::MainMenu)),
             ui::settings_menu.run_if(in_state(GameState::Settings)),
