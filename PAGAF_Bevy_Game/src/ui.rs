@@ -18,11 +18,7 @@ pub fn main_menu(
     asset_server: Res<AssetServer>, */
     mut contexts: EguiContexts,
     mut next_state: ResMut<NextState<GameState>>,
-    mut width_text : Local<TextBuffer>,
-    mut height_text : Local<TextBuffer>,
-    mut wfc_state : ResMut<WFCState>,
     mut exit: EventWriter<bevy::app::AppExit>,
-    mut tile_map_settings: ResMut<TileMapSettings>
 ) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
@@ -30,24 +26,12 @@ pub fn main_menu(
             ui.add_space(20.0);
 
             if ui.button("Start Game").clicked() {
-                let width: usize = width_text.0.parse().unwrap();
-                let height: usize = height_text.0.parse().unwrap();
-
-                wfc_state.reset_grid(width, height);
-
-                // Update TileMapSettings resource with new width/height
-                tile_map_settings.width = width;
-                tile_map_settings.height = height;
-
                 next_state.set(GameState::LoadGame);
             }
 
             if ui.button("Settings").clicked() {
                 next_state.set(GameState::Settings);
             }
-
-            ui.text_edit_singleline(&mut width_text.0);
-            ui.text_edit_singleline(&mut height_text.0);
 
             ui.add_space(20.0);
 
@@ -77,6 +61,7 @@ pub fn settings_menu(
                 });
             });
 
+            /*
             ui.vertical_centered(|ui| {
                 ui.set_max_width(300.0);
                 ui.horizontal(|ui| {
@@ -110,6 +95,7 @@ pub fn settings_menu(
                         });
                 });
             });
+            */
 
             ui.add_space(20.0);
 
@@ -120,22 +106,55 @@ pub fn settings_menu(
     });
 }
 
-pub fn load_game_menu(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
+pub fn load_game_menu(
+    mut contexts: EguiContexts,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut wfc_state : ResMut<WFCState>,
+    mut tile_map_settings: ResMut<TileMapSettings>,
+    mut width_text : Local<TextBuffer>,
+    mut height_text : Local<TextBuffer>,
+) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
             ui.heading("Welcome");
 
             ui.add_space(20.0);
 
-            // TODO: Handle load game & start game
-
+            /*
             if ui.button("Load Game").clicked() {
-                next_state.set(GameState::InGame);
+                // TODO: load and save game
+                // next_state.set(GameState::InGame);
             }
+            */
 
             if ui.button("New Game").clicked() {
+                let width: usize = width_text.0.parse().unwrap();
+                let height: usize = height_text.0.parse().unwrap();
+
+                wfc_state.reset_grid(width, height);
+
+                // Update TileMapSettings resource with new width/height
+                tile_map_settings.width = width;
+                tile_map_settings.height = height;
+
                 next_state.set(GameState::InGame);
             }
+
+            ui.add_space(20.0);
+
+            ui.vertical_centered(|ui| {
+                ui.set_max_width(250.0);
+
+                ui.horizontal(|ui| {
+                    ui.label("Grid Width:");
+                    ui.text_edit_singleline(&mut width_text.0);
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Grid Height:");
+                    ui.text_edit_singleline(&mut height_text.0);
+                });
+            });
 
             ui.add_space(20.0);
 
