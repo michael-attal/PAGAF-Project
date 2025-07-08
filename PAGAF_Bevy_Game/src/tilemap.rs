@@ -20,6 +20,19 @@ use bevy_ghx_proc_gen::proc_gen::generator::observer::GenerationUpdate;
 //#[cfg(target_arch = "wasm32")]
 use crate::particle_fx::spawn_on_place;
 
+
+#[derive(Resource, Debug, Clone, Copy)]
+pub struct TileMapSettings {
+    pub width: usize,
+    pub height: usize,
+}
+
+impl Default for TileMapSettings {
+    fn default() -> Self {
+        Self { width: 50, height: 50 }
+    }
+}
+
 #[derive(Component)]
 pub struct PlacementHighlight;
 
@@ -72,6 +85,88 @@ pub fn spawn_effect(
     position: Vec3,
 ) {
     spawn_on_place(commands, meshes, materials, position);
+}
+
+impl TileType {
+    /// Returns the GLB scene path depending on map size.
+    pub fn scene_path_for(self, tile_map_settings: &TileMapSettings) -> Option<String> {
+        let use_light = tile_map_settings.width * tile_map_settings.height > 225;
+        match self {
+            TileType::Empty => None,
+            TileType::Road => Some(
+                if use_light {
+                    "models/newBuilds/roads/2WayRoad.glb#Scene0"
+                } else {
+                    "models/newBuilds/roads/2WayRoad.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::RoadL => Some(
+                if use_light {
+                    "models/newBuilds/roads/LTurnRoad.glb#Scene0"
+                } else {
+                    "models/newBuilds/roads/LTurnRoad.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::RoadT => Some(
+                if use_light {
+                    "models/newBuilds/roads/TCrossRoad.glb#Scene0"
+                } else {
+                    "models/newBuilds/roads/TCrossRoad.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::RoadX => Some(
+                if use_light {
+                    "models/newBuilds/roads/XCrossRoad.glb#Scene0"
+                } else {
+                    "models/newBuilds/roads/XCrossRoad.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::Residential => Some(
+                if use_light {
+                    "models/tiles/residential/residential_1.glb#Scene0"
+                } else {
+                    "models/newBuilds/house/house_1.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::Commercial => Some(
+                if use_light {
+                    "models/tiles/commercial/commercial_1.glb#Scene0"
+                } else {
+                    "models/newBuilds/store/store_1.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::Industrial => Some(
+                if use_light {
+                    "models/tiles/industrial/industrial_1.glb#Scene0"
+                } else {
+                    "models/newBuilds/factory/factory_1.glb#Scene0"
+                }.to_string()
+            ),
+            TileType::Park => Some(
+                if use_light {
+                    "models/newBuilds/parc/parcFloorTree.glb#Scene0"
+                } else {
+                    "models/newBuilds/parc/parcFloorTree.glb#Scene0"
+                }.to_string()
+            ),
+        }
+    }
+
+    /// Returns the scale depending on map size.
+    pub fn scale_for(self, tile_map_settings: &TileMapSettings) -> Vec3 {
+        let use_light = tile_map_settings.width * tile_map_settings.height > 225;
+        match self {
+            TileType::Residential => if use_light { Vec3::splat(0.1) } else { Vec3::splat(0.5) },
+            TileType::Commercial => if use_light { Vec3::splat(0.05) } else { Vec3::splat(0.5) },
+            TileType::Industrial => if use_light { Vec3::splat(0.06) } else { Vec3::splat(1.0) },
+            TileType::Road => if use_light { Vec3::splat(0.5) } else { Vec3::splat(0.5) },
+            TileType::RoadL => if use_light { Vec3::splat(0.5) } else { Vec3::splat(0.5) },
+            TileType::RoadT => if use_light { Vec3::splat(0.5) } else { Vec3::splat(0.5) },
+            TileType::RoadX => if use_light { Vec3::splat(0.5) } else { Vec3::splat(0.5) },
+            TileType::Park => if use_light { Vec3::splat(1.0) } else { Vec3::splat(1.0) },
+            TileType::Empty => Vec3::ONE,
+        }
+    }
 }
 
 impl TileType {
@@ -173,6 +268,34 @@ impl Default for TileMap {
     }
 }
 
+impl TileMap {
+    pub fn new(width: usize, height: usize) -> Self {
+        let mut tiles = Vec::with_capacity(height);
+        let mut entities = Vec::with_capacity(height);
+
+        for y in 0..height {
+            let mut row = Vec::with_capacity(width);
+            let mut entity_row = Vec::with_capacity(width);
+            for x in 0..width {
+                row.push(Tile {
+                    tile_type: TileType::Empty,
+                    position: IVec2::new(x as i32, y as i32),
+                });
+                entity_row.push(None);
+            }
+            tiles.push(row);
+            entities.push(entity_row);
+        }
+
+        Self {
+            tiles,
+            width,
+            height,
+            entities,
+        }
+    }
+}
+
 // Marker component for grid tiles
 #[derive(Component)]
 struct GridTile;
@@ -190,8 +313,10 @@ pub fn setup_grid(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    settings: Res<TileMapSettings>,
 ) {
-    let grid_size = 50;
+    let grid_size_x = settings.width;
+    let grid_size_z = settings.height;
     let tile_size = 1.0;
 
     let tile_mesh = meshes.add(Plane3d::default().mesh().size(tile_size, tile_size));
@@ -221,8 +346,8 @@ pub fn setup_grid(
 
     commands.insert_resource(highlight_materials);
 
-    for x in 0..grid_size {
-        for z in 0..grid_size {
+    for x in 0..grid_size_x {
+        for z in 0..grid_size_z {
             commands.spawn((
                 Mesh3d(tile_mesh.clone()),
                 MeshMaterial3d(tile_material.clone()),
@@ -232,7 +357,7 @@ pub fn setup_grid(
         }
     }
 
-    commands.insert_resource(TileMap::default());
+    commands.insert_resource(TileMap::new(grid_size_x, grid_size_z));
 }
 
 pub fn place_tile_preview(
@@ -259,6 +384,7 @@ pub fn place_tile_preview(
 
     // #[cfg(target_arch = "wasm32")]
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut tile_map_settings: ResMut<TileMapSettings>,
 ) {
     if game_pause.paused || egui_contexts.ctx_mut().wants_pointer_input() {
         return;
@@ -324,6 +450,7 @@ pub fn place_tile_preview(
                             &asset_server,
                             &mut meshes,
                             &mut materials,
+                            &mut tile_map_settings,
                         );
                         
                         if placed {
@@ -342,7 +469,7 @@ pub fn place_tile_preview(
                                     SceneRoot(tile_handle),
                                     Transform {
                                         translation: Vec3::new(x as f32, 0.01, z as f32),
-                                        scale: selected_tile.0.scale(),
+                                        scale: selected_tile.0.scale_for(&tile_map_settings),
                                         ..default()
                                     },
                                 ))
@@ -380,6 +507,8 @@ pub fn place_tile(
 
     // #[cfg(target_arch = "wasm32")]
     materials: &mut ResMut<Assets<StandardMaterial>>,
+
+    tile_map_settings: &mut TileMapSettings,
 ) -> bool {
     if game_pause.paused
         || selected_tile.0 == TileType::Empty
@@ -399,7 +528,8 @@ pub fn place_tile(
             undo_redo,
             meshes,
             materials,
-            asset_server
+            asset_server,
+            tile_map_settings
         )
     }
     
@@ -414,7 +544,9 @@ pub fn update_map(
     undo_redo: &mut UndoRedo,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    asset_server: &Res<AssetServer>) -> bool
+    asset_server: &Res<AssetServer>,
+    tile_map_settings: &mut TileMapSettings,
+) -> bool
 {
     let updates = wfc_state.grid.observer.dequeue_all();
     for i in 0..updates.len()
@@ -438,7 +570,7 @@ pub fn update_map(
                         SceneRoot(tile_assets.tiles[tile_type.index()].clone()),
                         Transform {
                             translation: Vec3::new(coords.x as f32, 0.01, coords.y as f32),
-                            scale: tile_type.scale(),
+                            scale: tile_type.scale_for(tile_map_settings),
                             rotation: Quat::from_rotation_y(rotation),
                             ..default()
                         },

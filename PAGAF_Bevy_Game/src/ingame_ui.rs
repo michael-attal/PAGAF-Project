@@ -1,7 +1,7 @@
 use crate::app_config::{GameSettings, GameState};
 use crate::game::GamePause;
 use crate::tile_loader::TileAssets;
-use crate::tilemap::{update_map, SelectedTile, TileMap, TileType};
+use crate::tilemap::{update_map, SelectedTile, TileMap, TileMapSettings, TileType};
 use crate::undo_redo::UndoRedo;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
@@ -86,7 +86,8 @@ pub fn tile_panel(
 
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut tile_map_settings: ResMut<TileMapSettings>,
 ) {
     egui::Window::new("Building Panel")
         .anchor(egui::Align2::CENTER_BOTTOM, egui::vec2(0.0, -10.0))
@@ -119,7 +120,7 @@ pub fn tile_panel(
                         undo_redo.undo(&mut tilemap, &mut commands);
                     }
                     if ui.button("↪️Redo").clicked() {
-                        undo_redo.redo(&mut tilemap, &mut commands, &tile_assets);
+                        undo_redo.redo(&mut tilemap, &mut commands, &tile_assets, &tile_map_settings);
                     }
                     if ui.button("Generate All!").clicked() {
                         if wfc_state.grid.collapse_all()
@@ -133,7 +134,8 @@ pub fn tile_panel(
                                 &mut undo_redo,
                                 &mut meshes,
                                 &mut materials,
-                                &asset_server
+                                &asset_server,
+                                &mut tile_map_settings,
                             );
                         }
                     }

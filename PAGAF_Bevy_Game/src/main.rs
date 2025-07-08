@@ -28,6 +28,8 @@ use wfc::WFCState;
 use crate::particle_fx::{fade_out_system, velocity_system};
 
 use crate::particle_fx::spawn_on_place;
+use crate::tilemap::TileMapSettings;
+
 fn main() {
     let mut app = App::new();
 
@@ -54,11 +56,11 @@ fn main() {
         zoom_range: 5.0..50.0,
         zoom_speed: 1.5,
     });
+    app.insert_resource(TileMapSettings::default());
+
     app.init_state::<GameState>();
 
     app.add_systems(Startup, (
-        load_tiles,
-        setup_grid,
         skybox::setup_camera,
     ));
 
@@ -71,6 +73,8 @@ fn main() {
     );
 
     app.add_systems(OnEnter(GameState::InGame), (
+        load_tiles,
+        setup_grid,
         game::setup_game,
     ));
 

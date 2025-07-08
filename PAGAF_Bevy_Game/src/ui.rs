@@ -2,6 +2,7 @@ use crate::app_config::{BackgroundMusic, GameSettings, GameState, GraphicsQualit
 use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
+use crate::tilemap::TileMapSettings;
 use crate::wfc::WFCState;
 
 pub struct TextBuffer(String);
@@ -21,6 +22,7 @@ pub fn main_menu(
     mut height_text : Local<TextBuffer>,
     mut wfc_state : ResMut<WFCState>,
     mut exit: EventWriter<bevy::app::AppExit>,
+    mut tile_map_settings: ResMut<TileMapSettings>
 ) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
@@ -30,7 +32,12 @@ pub fn main_menu(
             if ui.button("Start Game").clicked() {
                 let width: usize = width_text.0.parse().unwrap();
                 let height: usize = height_text.0.parse().unwrap();
+
                 wfc_state.reset_grid(width, height);
+
+                // Update TileMapSettings resource with new width/height
+                tile_map_settings.width = width;
+                tile_map_settings.height = height;
 
                 next_state.set(GameState::LoadGame);
             }

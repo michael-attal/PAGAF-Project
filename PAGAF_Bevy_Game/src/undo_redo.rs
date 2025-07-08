@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::tile_loader::TileAssets;
-use crate::tilemap::{TileMap, TileType};
+use crate::tilemap::{TileMap, TileMapSettings, TileType};
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -47,6 +47,7 @@ impl UndoRedo {
         tilemap: &mut TileMap,
         commands: &mut Commands,
         tile_assets: &Res<TileAssets>,
+        tile_map_settings: &TileMapSettings,
     ) {
         if let Some(action) = self.redo_stack.pop() {
             match &action {
@@ -60,7 +61,7 @@ impl UndoRedo {
                             SceneRoot(handle),
                             Transform {
                                 translation: Vec3::new(*x as f32, 0.0, *y as f32),
-                                scale: tile_type.scale(),
+                                scale: tile_type.scale_for(tile_map_settings),
                                 ..default()
                             },
                         ))
