@@ -113,16 +113,19 @@ pub fn tile_panel(
             ui.separator();
 
             ui.vertical_centered(|ui| {
-                ui.set_max_width(150.0);
+                ui.set_max_width(70.0);
 
                 ui.horizontal(|ui| {
+                    /* // No more working since implementation of WFC, we need some adjustments to make it work
                     if ui.button("↩️Undo").clicked() {
                         undo_redo.undo(&mut tilemap, &mut commands);
                     }
                     if ui.button("↪️Redo").clicked() {
                         undo_redo.redo(&mut tilemap, &mut commands, &tile_assets, &tile_map_settings);
                     }
-                    if ui.button("Generate All!").clicked() {
+                    */
+
+                    if ui.button("Generate All").clicked() {
                         if wfc_state.grid.collapse_all()
                         {
                             println!("Reussite!");

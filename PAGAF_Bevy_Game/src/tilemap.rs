@@ -34,6 +34,9 @@ impl Default for TileMapSettings {
 }
 
 #[derive(Component)]
+pub struct TileModelTag;
+
+#[derive(Component)]
 pub struct PlacementHighlight;
 
 #[derive(Component)]
@@ -298,7 +301,7 @@ impl TileMap {
 
 // Marker component for grid tiles
 #[derive(Component)]
-struct GridTile;
+pub struct GridTile;
 
 // Resource for highlighting materials
 #[derive(Resource)]
@@ -314,7 +317,13 @@ pub fn setup_grid(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     settings: Res<TileMapSettings>,
+    query: Query<Entity, With<GridTile>>,
 ) {
+    // Remove previous grid tiles before recreating grid
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
     let grid_size_x = settings.width;
     let grid_size_z = settings.height;
     let tile_size = 1.0;
@@ -472,6 +481,7 @@ pub fn place_tile_preview(
                                         scale: selected_tile.0.scale_for(&tile_map_settings),
                                         ..default()
                                     },
+                                    TileModelTag,
                                 ))
                                 .id(),
                         );
@@ -574,6 +584,7 @@ pub fn update_map(
                             rotation: Quat::from_rotation_y(rotation),
                             ..default()
                         },
+                        TileModelTag,
                     ))
                     .id();
 

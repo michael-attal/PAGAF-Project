@@ -82,7 +82,7 @@ fn main() {
     app.add_systems(
         Update,
         (
-            patch::patch_material_alpha_mode,
+            patch::patch_tile_materials_recursive_system,
             skybox::load_skybox,
 
             // UI Menus
