@@ -49,6 +49,12 @@ impl Default for WFCState {
     }
 }
 
+impl WFCState {
+    pub fn reset_grid(&mut self, width: usize, height: usize) {
+        self.grid = WFCGrid::new(width, height);
+    }
+}
+
 pub struct WFCGrid {
     pub width: usize,
     pub height: usize,

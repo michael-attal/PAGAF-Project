@@ -2,12 +2,24 @@ use crate::app_config::{BackgroundMusic, GameSettings, GameState, GraphicsQualit
 use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
+use crate::wfc::WFCState;
+
+pub struct TextBuffer(String);
+
+impl Default for TextBuffer {
+    fn default() -> Self {
+        TextBuffer("10".to_string())
+    }
+}
 
 pub fn main_menu(
     /* mut commands: Commands,
     asset_server: Res<AssetServer>, */
     mut contexts: EguiContexts,
     mut next_state: ResMut<NextState<GameState>>,
+    mut width_text : Local<TextBuffer>,
+    mut height_text : Local<TextBuffer>,
+    mut wfc_state : ResMut<WFCState>,
     mut exit: EventWriter<bevy::app::AppExit>,
 ) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
@@ -16,12 +28,19 @@ pub fn main_menu(
             ui.add_space(20.0);
 
             if ui.button("Start Game").clicked() {
+                let width: usize = width_text.0.parse().unwrap();
+                let height: usize = height_text.0.parse().unwrap();
+                wfc_state.reset_grid(width, height);
+
                 next_state.set(GameState::LoadGame);
             }
 
             if ui.button("Settings").clicked() {
                 next_state.set(GameState::Settings);
             }
+
+            ui.text_edit_singleline(&mut width_text.0);
+            ui.text_edit_singleline(&mut height_text.0);
 
             ui.add_space(20.0);
 
