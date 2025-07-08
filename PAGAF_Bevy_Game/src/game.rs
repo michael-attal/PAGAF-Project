@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use crate::app_config::DestroyableEntity;
 use crate::tilemap::{SelectedTile, TileType};
+use bevy::input::mouse::AccumulatedMouseScroll;
+use bevy::prelude::*;
+use std::ops::Range;
 
 #[derive(Resource)]
 pub struct GamePause {
@@ -82,6 +85,28 @@ pub fn camera_movement(
         }
         if input.pressed(KeyCode::KeyE) {
             transform.rotate_y(-rotation_speed * time.delta_secs());
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct CameraZoomSettings {
+    pub zoom_range: Range<f32>,
+    pub zoom_speed: f32,
+}
+
+pub fn camera_zoom_system(
+    mouse_scroll: Res<AccumulatedMouseScroll>,
+    mut query: Query<&mut Transform, With<Camera3d>>,
+    zoom_settings: Res<CameraZoomSettings>,
+) {
+    if mouse_scroll.delta.y.abs() > 0.01 {
+        if let Ok(mut transform) = query.get_single_mut() {
+            let dir = (transform.translation - Vec3::ZERO).normalize();
+            let mut distance = (transform.translation - Vec3::ZERO).length();
+            distance = (distance - mouse_scroll.delta.y * zoom_settings.zoom_speed)
+                .clamp(zoom_settings.zoom_range.start, zoom_settings.zoom_range.end);
+            transform.translation = dir * distance;
         }
     }
 }
